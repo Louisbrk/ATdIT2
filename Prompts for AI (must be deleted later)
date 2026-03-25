@@ -1,0 +1,418 @@
+We are a university student team working on a fictional business-process-and-software project about a struggling space tourism company run by “Elon Bezos”.
+Overall project context
+The company has major business problems:
+	• health-related flight cancellations
+	• poor payment behavior from customers
+	• bad reviews and weak customer satisfaction
+	• high logistical and maintenance costs
+The course goal is to improve business processes and design a software-supported solution.
+However, our team is responsible for only one part of the overall company process:
+Our team scope
+We are responsible only for the “Space Flight” phase.
+We are not building the whole company system.
+Other teams handle other phases.
+So our job is to:
+	• analyze the Space Flight process
+	• define relevant personas for this phase
+	• identify major problems and exceptions in this phase
+	• design a better target process
+	• build a small but runnable proof of concept focused on one core process inside the Space Flight phase
+Professor’s expectations
+The professor wants:
+	• a runnable Java program
+	• clear process thinking, not just code
+	• strong documentation
+	• a realistic and focused prototype
+	• proper consideration of exceptions, not only the happy path
+	• compliance with software engineering principles, especially:
+		○ SOLID
+		○ DRY
+		○ KISS
+		○ YAGNI
+Allowed third-party components:
+	• JavaFX
+	• Logging framework
+	• JDBC connector
+	• JUnit
+Important grading criteria
+Development
+	• runnable program
+	• technical documentation with architecture and program logic
+	• syntactically correct diagrams with appropriate detail
+	• clean code
+	• SOLID-compliant design
+	• understandable structure
+	• maintainable implementation
+Process design and documentation
+	• clear problem analysis
+	• clear business value
+	• personas for all active user groups in the core process
+	• BPMN diagrams with correct syntax
+	• enough detail in the core process
+	• special focus on exception cases
+	• clear scope description
+	• clear separation between implemented features and mocked features
+	• UI mockups / understandable interface visualization
+	• user manual
+Final presentation
+	• coherent storyline from problem to solution to prototype
+	• clear explanation of personas and addressed problems
+	• explanation of process and data exchange between roles and systems
+	• clear value proposition and differentiating points
+	• lessons learned during the project
+	• all team members participate
+Feedback from professor we must address
+The professor specifically challenged us to think beyond the simple happy path.
+Important feedback included:
+	• consider drag-and-drop meaningfully
+	• consider exception cases
+	• think about what happens if support is unavailable or incapacitated
+	• think in at least two cases, not only one normal flow
+So our software and process design must explicitly include:
+	1. a normal support case
+	2. an emergency or fallback case
+Recommended focus for our prototype
+Our proof of concept should focus on:
+In-Flight Passenger Support and Emergency Escalation
+This means:
+during the actual space flight, passengers may feel fear, nausea, stress, discomfort, or more serious health problems.
+The company needs software support so onboard support staff and base-station staff can react in a structured way.
+Core personas in our phase (you can add more or adjust it to make it more plausible)
+	1. Passenger
+		○ the customer on the flight
+		○ may report discomfort or need support
+	2. Onboard Support
+		○ responsible for passenger well-being during the flight
+		○ handles normal incidents
+	3. Base Station Operator
+		○ remote backup / supervisory role
+		○ takes over escalated or emergency cases
+Two main scenarios we must support
+Scenario 1: Normal support case
+	• passenger feels unwell, anxious, or mildly stressed
+	• onboard support reviews the case
+	• support chooses an action
+	• the passenger is monitored
+	• the case is resolved
+Scenario 2: Emergency / fallback case
+	• passenger has a severe issue OR onboard support becomes unavailable
+	• the incident is escalated to base station
+	• emergency workflow starts
+	• all actions are logged
+	• the case remains traceable and visible
+What the software prototype should do
+The prototype should be a small JavaFX desktop application that supports this core process.
+It should include:
+	• passenger overview
+	• incident creation
+	• incident categorization by severity
+	• normal support handling
+	• emergency escalation
+	• action/history logging
+	• clear status transitions
+	• a meaningful drag-and-drop workflow board
+Example workflow states:
+	• New
+	• Assessing
+	• Monitoring
+	• Escalated
+	• Resolved
+What should be implemented
+The implemented proof of concept can include:
+	• JavaFX UI
+	• incident board with drag-and-drop
+	• incident details
+	• passenger list
+	• support role handling
+	• base-station takeover
+	• business rules for escalation
+	• logging of actions
+	• mock data
+	• JUnit tests for key logic
+What can be mocked
+The following may be mocked or simulated:
+	• real AI diagnosis
+	• real medical sensors
+	• real flight suit telemetry
+	• real spacecraft systems
+	• real network communication
+	• real external databases if not necessary
+	• advanced analytics
+Technical expectation for the code
+The code should:
+	• be written in Java
+	• preferably use Maven
+	• use JavaFX
+	• follow a clean layered structure
+	• separate UI logic from business logic
+	• avoid giant classes
+	• use interfaces where appropriate
+	• be easy to explain in a presentation
+	• be realistic for a student proof of concept
+Deliverables our team should support
+We need material for:
+	• runnable prototype
+	• technical documentation
+	• architecture explanation
+	• BPMN process model
+	• personas
+	• scope description
+	• UI overview / mockups
+	• user manual
+	• final presentation demo
+Scope boundary
+We are not building a complete space tourism enterprise platform.
+We are building a focused proof of concept for one core process in the Space Flight phase only.
+Whenever there is a choice, the solution should prefer:
+	• clarity
+	• maintainability
+	• presentation value
+	• realistic scope
+over excessive complexity.
+
+This is some prompts 
+
+Prompts: 
+Master prompt for IntelliJ AI Assistant:
+
+You are helping me build a university Java project in IntelliJ.
+Project context:
+We are a student team responsible only for the “Space Flight” phase of a fictional space tourism company run by “Elon Bezos”.
+We must build a focused proof of concept, not a full enterprise system.
+The professor explicitly requires:
+	• a runnable Java program
+	• technical documentation with architecture and program logic
+	• syntactically correct diagrams with appropriate level of detail
+	• Clean Code principles: SOLID, DRY, KISS, YAGNI
+	• use of established design patterns where appropriate
+	• allowed third-party components only: JavaFX, logging framework, JDBC connector, JUnit
+	• strong focus on process support, personas, scope clarity, and exceptions
+	• we must clearly distinguish implemented features from mocked features
+Our team focus:
+Space Flight phase only.
+Chosen prototype idea:
+Build a JavaFX proof of concept called “In-Flight Passenger Support & Emergency Escalation System”.
+Business problem:
+During space flight, passengers may experience stress, panic, discomfort, abnormal vital signs, or medical emergencies.
+Current handling is too ad hoc and risky.
+The software should help onboard support and base-station staff monitor passengers, manage incidents, and escalate emergencies.
+The system must also handle the exception that onboard support is unavailable or incapacitated.
+Required business cases:
+	1. Normal support case:
+		○ passenger reports discomfort or mild health issue
+		○ onboard support reviews status
+		○ support chooses an action / support mode
+		○ case is monitored and resolved
+	2. Emergency / fallback case:
+		○ passenger has a severe incident OR onboard support becomes unavailable
+		○ incident is escalated to base station
+		○ emergency workflow is activated
+		○ all actions are logged
+Important UI requirement:
+Include a meaningful drag-and-drop incident workflow board with columns such as:
+	• New
+	• Assessing
+	• Monitoring
+	• Escalated
+	• Resolved
+Main active personas:
+	1. Passenger
+		○ tourist participating in the flight
+		○ can report discomfort or receive support
+	2. Onboard Support
+		○ staff member responsible for passenger wellbeing during flight
+		○ monitors cases and handles normal incidents
+	3. Base Station Operator
+		○ remote backup / supervisory role
+		○ takes over escalated or emergency cases
+What I need from you:
+Please generate this project step by step in a clean, production-like but realistic student-project structure for IntelliJ.
+Technical constraints:
+	• Java 21 preferred
+	• JavaFX app
+	• Maven project
+	• layered architecture
+	• no overengineering
+	• interfaces where they add value
+	• no giant God classes
+	• keep the code understandable for students
+	• package names in English
+	• code comments in English
+	• use logging
+	• use JUnit for service-level tests
+	• use mock/in-memory repositories first unless persistence is truly needed
+Please do the following in order:
+	1. Propose a clean project architecture that follows SOLID and is suitable for this proof of concept.
+	2. Suggest the package structure.
+	3. Identify appropriate design patterns for this project and justify them briefly.
+	4. Define the domain model classes and enums.
+	5. Define the business rules for incident handling and escalation.
+	6. Define the JavaFX screens/views we need for the demo.
+	7. Generate the Maven pom.xml with only necessary dependencies.
+	8. Generate the source code step by step, beginning with domain model and services.
+	9. Generate a drag-and-drop board UI for incident status management.
+	10. Generate sample mock data for a realistic demo.
+	11. Generate JUnit tests for the key business logic.
+	12. Generate a README.md that includes:
+	• project purpose
+	• problem statement
+	• personas
+	• implemented features
+	• mocked features
+	• architecture summary
+	• how to run the project
+	13. Generate a technical documentation markdown file with:
+	• architecture
+	• package responsibilities
+	• main program flow
+	• explanation of SOLID usage
+	• explanation of design decisions
+	14. Generate a user manual markdown file for end users.
+	15. Generate BPMN-ready textual process descriptions for:
+	• normal support case
+	• emergency / fallback case
+	16. Generate short user stories and acceptance criteria for the core features.
+Important:
+Do not generate everything in one huge block.
+Work iteratively and ask me before moving from one generation step to the next.
+Keep the project small enough to finish as a university proof of concept.
+Whenever there is a choice, prefer clarity, maintainability, and demo value over complexity.
+
+
+Very important follow-up prompt after the first answer
+After the AI proposes the architecture, send this:
+
+Good. Now refine the architecture so it is explicitly easy to defend in a university grading context.
+Please make sure:
+	• each class has a clear single responsibility
+	• UI logic is separated from business logic
+	• repositories are abstractions, not hard-wired everywhere
+	• services contain the use-case logic
+	• enums are used for status and severity
+	• exception handling is simple and understandable
+	• no unnecessary framework complexity
+	• the design can be explained easily in a 25-minute presentation
+Then generate the final recommended package structure and a short explanation for each package.
+
+
+Prompt for generating the actual code skeleton:
+
+Now generate the initial Maven project skeleton for IntelliJ with these packages and classes.
+Please provide:
+	• pom.xml
+	• package tree
+	• all initial empty or minimally implemented classes
+	• main JavaFX application entry point
+	• domain enums
+	• domain entities
+	• repository interfaces
+	• in-memory repository implementations
+	• service interfaces and implementations
+	• sample logger setup
+Make sure the code compiles and follows Java naming conventions.
+Do not skip imports.
+Do not use placeholders like “TODO implement later” unless absolutely necessary.
+
+Prompt for the core business logic:
+
+Now generate the core business logic for incident handling.
+Business rules:
+	• a passenger can have zero or more incidents
+	• each incident has severity: LOW, MEDIUM, HIGH, CRITICAL
+	• each incident has status: NEW, ASSESSING, MONITORING, ESCALATED, RESOLVED
+	• normal incidents are handled by onboard support
+	• CRITICAL incidents are escalated automatically to base station
+	• incidents can also be escalated if onboard support is unavailable
+	• every important action must be logged into an incident history / action log
+Please generate:
+	• service methods
+	• validation
+	• escalation logic
+	• action log handling
+	• realistic method names
+	• clean Javadoc comments for important classes and methods
+
+Prompt for the professor’s “2 cases”:
+
+Now generate demo-ready support for exactly two main scenarios:
+Scenario 1: Normal support case
+	• passenger feels unwell or anxious
+	• onboard support opens the case
+	• support selects a support action
+	• passenger is monitored
+	• case is resolved
+Scenario 2: Emergency / fallback case
+	• passenger has a severe issue OR onboard support becomes unavailable
+	• the system escalates to base station
+	• base station takes over
+	• emergency workflow is visible in the UI
+	• all status changes are recorded
+Please implement these scenarios in the code and also provide mock data so they can be demonstrated easily during presentation.
+
+Prompt for the drag-and-drop UI:
+
+Now generate the JavaFX UI for an incident management board with drag and drop.
+Requirements:
+	• columns: New, Assessing, Monitoring, Escalated, Resolved
+	• incident cards should display:
+		○ passenger name
+		○ incident title
+		○ severity
+		○ current responsible role
+	• dragging a card to another column should update the incident status if the move is valid
+	• invalid moves should be prevented or clearly explained
+	• the UI should be simple, clean, and presentation-friendly
+	• the UI must not contain business logic directly; it should call services
+Also generate:
+	• a passenger overview panel
+	• an action/history panel
+	• a detail view for the selected incident
+
+
+Prompt for the documentation files:
+
+Now generate the documentation files for the repository.
+Create the following markdown files:
+	1. README.md
+	2. docs/ARCHITECTURE.md
+	3. docs/SCOPE.md
+	4. docs/USER_MANUAL.md
+	5. docs/PERSONAS.md
+	6. docs/PROCESS_DESCRIPTIONS.md
+	7. docs/TESTING.md
+Content requirements:
+	• concise but professional
+	• easy to understand for professors
+	• clearly distinguish between implemented features and mocked features
+	• explicitly mention adherence to SOLID, DRY, KISS, YAGNI
+	• explain why the chosen scope fits a proof of concept
+	• explain the business value for the Space Flight phase
+
+Prompt for BPMN-ready text:
+
+Now write BPMN-ready process descriptions for manual modeling in Signavio.
+I need two process descriptions:
+	1. Normal in-flight support process
+	2. Emergency escalation / fallback process
+For each process provide:
+	• start event
+	• participants / lanes
+	• tasks in order
+	• gateways / decisions
+	• exception paths
+	• end events
+	• data objects / information exchanged
+	• which steps are implemented in software and which are outside system scope
+Keep them precise enough that I can model them manually as BPMN.
+
+Prompt for tests:
+
+Now generate JUnit tests for the most important business rules.
+At minimum cover:
+	• creating incidents
+	• automatic escalation of CRITICAL incidents
+	• fallback escalation when onboard support is unavailable
+	• allowed and disallowed status transitions
+	• action log creation
+	• resolving incidents
+Please keep tests readable and aligned with the service layer.
