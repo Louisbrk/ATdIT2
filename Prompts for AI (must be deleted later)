@@ -87,6 +87,288 @@ Core personas in our phase (you can add more or adjust it to make it more plausi
 	3. Base Station Operator
 		○ remote backup / supervisory role
 		○ takes over escalated or emergency cases
+our current personas:
+# 👩‍💼 Persona 1: Jennifer Monroe (Premium Passenger)
+
+## Description
+
+Jennifer Monroe is a high-profile CEO and entrepreneur who values exclusivity, efficiency, and premium service. She expects a flawless, personalized experience and sees the space flight as both a luxury event and a branding opportunity. Her time is extremely limited, and she relies on smooth processes and professional support.
+
+## Goals & Motivation
+
+* Experience something unique and prestigious
+* Share her journey publicly (social/media presence)
+* Maximize comfort with minimal effort
+
+## Needs
+
+* Personalized and proactive support
+* Fast response times
+* Clear communication during the flight
+* High level of safety and control
+
+## Pain Points
+
+* Delays or inefficiencies
+* Lack of personalization
+* Poor or unclear communication
+
+## Interaction with the System
+
+* Receives real-time updates about her status
+* Gets instructions and reassurance from onboard support
+* Can report discomfort or request help
+
+## Required Data
+
+* Current status of flight and personal condition
+* Instructions or recommendations
+* Feedback from support team
+
+## Behavior in Normal Case
+
+* Reports minor discomfort (e.g. stress, nausea)
+* Expects fast and professional handling
+* Follows instructions
+
+## Behavior in Emergency Case
+
+* May panic or become unresponsive
+* Needs clear, simple instructions
+* Requires immediate prioritization
+
+## Worst-Case Scenario
+
+Jennifer experiences a panic attack or medical emergency during the flight and cannot communicate clearly. The system must still allow support to act quickly based on available data.
+
+## Relevance for Software
+
+The system must provide:
+
+* fast response handling
+* clear communication
+* prioritization of high-value customers
+* simple and reassuring UI interactions
+
+---
+
+# 👨 Persona 2: Ben Cooper (Standard Passenger)
+
+## Description
+
+Ben Cooper is an average customer who has invested all his savings into this once-in-a-lifetime experience. He is emotionally invested and may feel insecure or overwhelmed in a premium environment.
+
+## Goals & Motivation
+
+* Fulfill a lifelong dream
+* Have a safe and memorable experience
+* Feel included and comfortable
+
+## Needs
+
+* Clear guidance and instructions
+* Emotional reassurance
+* Easy-to-understand communication
+
+## Pain Points
+
+* Anxiety during the flight
+* Fear of not fitting in
+* High financial pressure → high expectations
+
+## Interaction with the System
+
+* Reports issues or discomfort
+* Receives step-by-step instructions
+* Gets reassurance from support
+
+## Required Data
+
+* Simple status updates
+* Clear instructions
+* Feedback about his condition
+
+## Behavior in Normal Case
+
+* Reports discomfort or confusion
+* Needs reassurance and explanation
+* Follows structured guidance
+
+## Behavior in Emergency Case
+
+* May panic or overreact
+* May not follow instructions immediately
+* Requires calm and guided support
+
+## Worst-Case Scenario
+
+Ben refuses instructions due to fear or panic, making it difficult for onboard support to manage the situation.
+
+## Relevance for Software
+
+The system must provide:
+
+* simple and intuitive UI
+* structured workflows
+* clear step-by-step instructions
+* emotional support guidance
+
+---
+
+# 👩‍🚀 Persona 3: Emma Bright (Onboard Support)
+
+## Description
+
+Emma is responsible for passenger safety and well-being during the flight. She operates in a high-pressure environment and must react quickly to both routine and unexpected situations. She is the first point of contact for all passenger issues.
+
+## Goals & Motivation
+
+* Ensure safety of all passengers
+* Maintain a smooth flight experience
+* Resolve incidents quickly and efficiently
+
+## Needs
+
+* Clear overview of all passengers
+* Fast access to incident data
+* Easy and quick interaction with the system
+* Decision support for critical situations
+
+## Pain Points
+
+* High responsibility
+* Time pressure
+* Multiple incidents at once
+* Unpredictable events
+
+## Interaction with the System
+
+* Creates and manages incidents
+* Assigns severity levels
+* Updates status of cases
+* Communicates with base station
+
+## Required Data
+
+* Passenger status and condition
+* Incident severity levels
+* History of actions
+* System recommendations
+
+## Behavior in Normal Case
+
+* Identifies and handles incidents
+* Monitors passenger condition
+* Resolves cases independently
+
+## Behavior in Emergency Case
+
+* Escalates incidents to base station
+* Follows emergency workflows
+* May become overloaded with multiple cases
+
+## Worst-Case Scenario
+
+Emma becomes unavailable (e.g. health issue or overload), and the system must allow full takeover by the base station.
+
+## Relevance for Software
+
+The system must provide:
+
+* fast incident creation and management
+* clear prioritization (severity levels)
+* low cognitive load (simple UI)
+* seamless escalation functionality
+
+---
+
+# 🧑‍✈️ Persona 4: Brendon Fitz (Base Station Operator)
+
+## Description
+
+Brendon works at the base station and supervises the flight remotely. He is responsible for handling escalated incidents and supporting onboard staff in critical situations. He ensures safe operations from the ground.
+
+## Goals & Motivation
+
+* Ensure overall flight safety
+* Support onboard crew
+* Handle critical incidents effectively
+
+## Needs
+
+* Full visibility of all incidents
+* Ability to take control when needed
+* Reliable communication with onboard staff
+
+## Pain Points
+
+* Delayed or incomplete information
+* High-pressure decision-making
+* Dependency on onboard support
+
+## Interaction with the System
+
+* Monitors all incidents in real time
+* Receives escalated cases
+* Takes over control in emergencies
+* Communicates decisions to onboard staff
+
+## Required Data
+
+* Complete incident history
+* Current status of all passengers
+* Severity levels and priorities
+* Actions taken so far
+
+## Behavior in Normal Case
+
+* Monitors system passively
+* Supports onboard staff if needed
+
+## Behavior in Emergency Case
+
+* Takes over incident handling
+* Coordinates emergency response
+* Makes critical decisions
+
+## Worst-Case Scenario
+
+Multiple critical incidents occur while onboard support is unavailable, requiring Brendon to manage the entire situation remotely.
+
+## Relevance for Software
+
+The system must provide:
+
+* full transparency of all data
+* clear escalation workflows
+* remote control capabilities
+* reliable and fast communication
+
+---
+
+# 🔗 Connection to Software Prototype (Important for Documentation)
+
+The personas directly define the system behavior:
+
+* Passenger → creates incident
+* Onboard Support → manages and classifies incident
+* Base Station → handles escalation
+
+Two core flows must exist:
+
+1. Normal case → handled onboard
+2. Emergency case → escalated to base station
+
+This ensures alignment between:
+
+* Personas
+* BPMN process
+* Software prototype
+* Presentation storyline
+
+---
+
+
 Two main scenarios we must support
 Scenario 1: Normal support case
 	• passenger feels unwell, anxious, or mildly stressed
