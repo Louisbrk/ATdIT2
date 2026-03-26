@@ -510,7 +510,7 @@ Main active personas:
 What I need from you:
 Please generate this project step by step in a clean, production-like but realistic student-project structure for IntelliJ.
 Technical constraints:
-	• Java 21 preferred
+	• Java 25 preferred
 	• JavaFX app
 	• Maven project
 	• layered architecture
