@@ -85,8 +85,35 @@ Prerequisites:
 - internet connection for the first Maven-wrapper download
 
 The repository already contains the Maven wrapper, so a separate Maven installation is optional.
+Important: the terminal must be able to find the JDK. That means either:
+
+- `JAVA_HOME` points to your JDK 25 folder, or
+- `java` is available on your `PATH`
 
 ### Windows
+
+Check first:
+
+```powershell
+java -version
+```
+
+If that fails, set the JDK for the current terminal session:
+
+```powershell
+$env:JAVA_HOME="C:\Path\To\JDK-25"
+$env:Path="$env:JAVA_HOME\bin;$env:Path"
+java -version
+```
+
+Example for the local setup used during development:
+
+```powershell
+$env:JAVA_HOME="C:\Users\18266\.jdks\openjdk-25.0.2"
+$env:Path="$env:JAVA_HOME\bin;$env:Path"
+```
+
+Then run:
 
 ```powershell
 .\mvnw.cmd test
@@ -94,6 +121,22 @@ The repository already contains the Maven wrapper, so a separate Maven installat
 ```
 
 ### macOS / Linux
+
+Check first:
+
+```bash
+java -version
+```
+
+If that fails, set the JDK for the current shell session:
+
+```bash
+export JAVA_HOME=/path/to/jdk-25
+export PATH="$JAVA_HOME/bin:$PATH"
+java -version
+```
+
+Then run:
 
 ```bash
 chmod +x mvnw
@@ -109,6 +152,7 @@ chmod +x mvnw
 4. Run either the main class `com.spaceflight.support.SpaceFlightSupportApplication` or the Maven goal `javafx:run`.
 
 If Maven reports `release version 25 not supported`, IntelliJ or the terminal is using the wrong JDK.
+If Maven reports that `JAVA_HOME` is not defined correctly, your terminal cannot currently find the JDK.
 
 ## Scope Reminder
 
