@@ -1,64 +1,68 @@
 # Scope
 
-## In Scope
+## Core Scope After Professor Feedback
 
-This team is responsible only for the **Space Flight** phase of the fictional company process.
-
-The proof of concept covers one focused core process:
+This repository implements a focused sub-process inside the **Space Flight** phase:
 
 **In-Flight Passenger Support and Emergency Escalation**
 
-Implemented process capabilities:
+The key design choice is that the team may still show a broader Signavio overview for context, but the runnable software must stay focused on one defendable core process.
 
-- view passengers during flight
-- create a passenger incident
-- classify an incident by severity
-- manage incident workflow on a drag-and-drop board
-- handle normal onboard support cases
-- escalate severe or fallback cases to base station
-- log all important actions for traceability
-- show which role is currently responsible
+## In Scope
 
-## Out of Scope
+- passenger interaction through an in-seat support display
+- normal in-flight support handling
+- emergency escalation to base station
+- fallback handling when onboard support is unavailable
+- launch / landing exception handling when nobody can move in the cabin
+- incident workflow with clear statuses
+- traceable action history
+- visibility of responsibility changes between roles
 
-The prototype does **not** implement a full company platform.
+## Explicitly Out of Scope
 
-Not included:
-
-- booking and sales
-- billing and payment management
+- check-in
+- boarding orchestration as a software focus
 - pre-flight medical clearance
-- spacecraft logistics and maintenance planning
-- review management
-- enterprise user management
+- booking, sales, billing, and payment
+- maintenance and logistics
+- complete spacecraft control
 - real telemetry integration
-- real network communication
-- real persistence beyond in-memory data
+- real doctor / psychologist communication systems
+- full enterprise platform behavior
 
-## Why the Scope Is Appropriate
+## Why This Scope Fits the Project
 
-The chosen scope is narrow on purpose:
-
-- it supports a concrete business problem
-- it matches the professor’s request for a realistic prototype
-- it includes both the normal case and the exception/fallback case
-- it remains feasible for a university student project
+- it directly addresses the professor's feedback about exceptions
+- it supports two clear cases: normal handling and fallback / emergency handling
+- it provides meaningful user interaction instead of passive reporting only
+- it is realistic enough for a student proof of concept and small enough to finish
 
 ## Implemented vs Mocked Boundary
 
 ### Implemented
 
-- workflow support inside the Java application
-- incident status management
+- JavaFX mission-control dashboard
+- JavaFX passenger console
+- incident creation and classification
+- workflow board with drag and drop
 - escalation logic
-- action log visibility
-- demo-ready passengers and incidents
+- base-station takeover
+- launch / landing fallback behavior in the UI and process wording
+- action logging
 
-### Mocked
+### Mocked / Documented
 
-- sensor input
-- spacecraft communication
-- medical diagnosis
-- persistence and external integrations
+- remote doctor support
+- psychologist / chatbot escalation workflow
+- real medical devices
+- real spacecraft systems
+- external databases and communication infrastructure
 
-This boundary is intentional and should be explained explicitly during the presentation.
+## Presentation Guidance
+
+When presenting:
+
+- use the broad BPMN only as business context
+- show the implemented software as the detailed in-flight support sub-process
+- state clearly that check-in is intentionally not part of this prototype

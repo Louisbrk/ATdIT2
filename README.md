@@ -6,7 +6,7 @@ This repository contains a focused JavaFX proof of concept for the **Space Fligh
 
 **In-Flight Passenger Support and Emergency Escalation**
 
-The goal is to show how onboard support staff and base-station staff can manage passenger incidents in a structured, traceable, and presentation-ready way.
+The goal is to show how passengers, onboard support staff, and base-station staff can manage in-flight incidents in a structured, traceable, and presentation-ready way.
 
 ## Problem Statement
 
@@ -21,22 +21,27 @@ The existing process is assumed to be too ad hoc. This prototype introduces a wo
 
 ## Personas
 
-- Passenger: reports discomfort and receives support
+- Passenger: reports discomfort and receives support through the seat display
 - Onboard Support: handles normal in-flight cases
 - Base Station Operator: takes over escalated or fallback cases
+- Remote Doctor / Psychologist: currently documented as mocked extension roles for escalated cases
 
 Detailed personas are documented in [docs/PERSONAS.md](docs/PERSONAS.md).
 
 ## Implemented Features
 
 - JavaFX desktop application
+- two interactive views: `Mission Control` and `Passenger Console`
 - passenger overview panel
+- seat-display inspired passenger dashboard with interactive help buttons
 - incident creation form
 - drag-and-drop incident workflow board
 - workflow states: `New`, `Assessing`, `Monitoring`, `Escalated`, `Resolved`
 - onboard support handling for normal incidents
 - automatic escalation of `CRITICAL` incidents
 - fallback escalation when onboard support is unavailable
+- flight-phase handling for launch, orbit, and landing constraints
+- launch and landing exception handling when crew movement is blocked
 - base-station takeover for escalated cases
 - incident detail panel and action history
 - in-memory repositories with realistic demo data
@@ -49,6 +54,7 @@ Detailed personas are documented in [docs/PERSONAS.md](docs/PERSONAS.md).
 - network communication between spacecraft and base station
 - external database persistence
 - AI diagnosis and analytics
+- full doctor / psychologist workflows beyond UI placeholders and documentation
 - advanced authentication and authorization
 
 ## Architecture Summary
@@ -76,16 +82,43 @@ More detail is available in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 Prerequisites:
 
 - Java 25
-- Maven 3.9+
+- internet connection for the first Maven-wrapper download
 
-Commands:
+The repository already contains the Maven wrapper, so a separate Maven installation is optional.
+
+### Windows
+
+```powershell
+.\mvnw.cmd test
+.\mvnw.cmd javafx:run
+```
+
+### macOS / Linux
 
 ```bash
+chmod +x mvnw
 ./mvnw test
 ./mvnw javafx:run
 ```
 
-In IntelliJ, import the Maven project and run `com.spaceflight.support.SpaceFlightSupportApplication`.
+### IntelliJ IDEA
+
+1. Open the repository as a Maven project.
+2. Set the Project SDK to `JDK 25`.
+3. Refresh Maven if IntelliJ imported with a different JDK.
+4. Run either the main class `com.spaceflight.support.SpaceFlightSupportApplication` or the Maven goal `javafx:run`.
+
+If Maven reports `release version 25 not supported`, IntelliJ or the terminal is using the wrong JDK.
+
+## Scope Reminder
+
+Your team may maintain a broader Signavio overview of the entire space-flight phase, but this repository implements only the detailed in-flight support sub-process after the professor feedback:
+
+- normal support during flight
+- emergency escalation
+- launch / landing fallback when nobody can move in the cabin
+
+It does **not** implement check-in or the full end-to-end flight business process.
 
 ## Documentation Index
 

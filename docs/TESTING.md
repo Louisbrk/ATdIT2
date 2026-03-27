@@ -2,38 +2,69 @@
 
 ## Testing Strategy
 
-The prototype focuses on service-level tests because the most important grading risk is incorrect process logic, not UI cosmetics.
+The automated tests focus on the service layer because the main grading risk is incorrect process logic.
 
-The tests cover the central business rules in `IncidentServiceImpl`.
+The UI adds value for the demo, but the workflow rules, escalation behavior, and traceability are the real core of the proof of concept.
 
-## Covered Business Rules
+## Automated Coverage
 
-- creating a new incident
+The JUnit tests cover:
+
+- creating incidents
 - automatic escalation of `CRITICAL` incidents
 - fallback escalation when onboard support becomes unavailable
 - allowed and disallowed workflow transitions
-- action-log creation for support handling
-- resolving incidents after successful handling
+- action-log creation
+- incident resolution
 
-## Why This Test Scope Is Appropriate
+These tests are aligned with `IncidentServiceImpl`.
 
-This test scope is suitable for a proof of concept because:
+## Manual Demo Checks
 
-- the service layer contains the main process logic
-- it validates the normal case and the exception case
-- it keeps the test suite understandable for students
-- it supports presentation and documentation claims with executable checks
+Because the professor also evaluates interaction quality, these manual checks should be part of the demo preparation:
+
+### Passenger Console
+
+- create a normal support request from the seat display
+- create an emergency request from the seat display
+- switch between different passengers
+
+### Mission Control
+
+- drag an incident through the normal workflow
+- verify that invalid moves are blocked
+- open the history panel and confirm traceability
+
+### Exception Handling
+
+- set the flight phase to launch or landing
+- show that crew movement is blocked conceptually
+- create a request anyway through the passenger console
+- show fallback visibility and escalation behavior
+
+### Crew Unavailability
+
+- disable the onboard support readiness checkbox
+- confirm that unresolved incidents are escalated automatically
 
 ## How to Run Tests
 
+### Windows
+
+```powershell
+.\mvnw.cmd test
+```
+
+### macOS / Linux
+
 ```bash
-mvn test
+./mvnw test
 ```
 
 ## Residual Risks
 
-- JavaFX UI behavior is not covered by automated tests
-- drag-and-drop interaction still requires manual demo testing
-- in-memory repositories are simpler than real persistence
+- JavaFX behavior is not covered by automated UI tests
+- drag-and-drop still requires manual verification
+- doctor / psychologist support is currently documented or mocked, not fully implemented
 
-These residual risks are acceptable because the project is a focused prototype, not a production system.
+These risks are acceptable because this is a focused university proof of concept.

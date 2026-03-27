@@ -45,6 +45,13 @@ public final class DemoDataInitializer {
                 "C3",
                 "Passenger with mild motion sickness history noted in the pre-flight briefing."
         ));
+        passengerRepository.save(new Passenger(
+                UUID.randomUUID(),
+                "Noah Fischer",
+                PassengerTier.STANDARD,
+                "D4",
+                "Young passenger traveling with parents. Needs calm, simple instructions and extra reassurance during stressful phases."
+        ));
 
         Incident normalCase = incidentService.createIncident(new CreateIncidentCommand(
                 ben.getId(),

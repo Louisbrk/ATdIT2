@@ -2,127 +2,143 @@
 
 ## Architectural Goal
 
-The architecture is intentionally small, layered, and easy to defend in a university grading context. It separates process logic from presentation logic and keeps every class focused on one responsibility.
+The architecture is intentionally small, layered, and presentation-friendly.
+
+It supports one core claim:
+
+- business rules belong in services
+- JavaFX belongs in the presentation layer
+- the prototype stays understandable and maintainable
 
 ## Package Responsibilities
 
 ### `com.spaceflight.support.app`
 
 - application bootstrap
-- logger configuration
-- demo users and seeded mock data
+- logging configuration
+- seeded demo data
 
 ### `com.spaceflight.support.domain.enums`
 
-- stable business concepts such as status, severity, passenger tier, support role, and support action
+- stable workflow concepts:
+  - `IncidentStatus`
+  - `IncidentSeverity`
+  - `ResponsibleRole`
+  - `SupportActionType`
+  - `PassengerTier`
+  - `FlightPhase`
 
 ### `com.spaceflight.support.domain.model`
 
-- core domain entities:
-  - `Passenger`
-  - `Incident`
-  - `IncidentActionLog`
+- `Passenger`
+- `Incident`
+- `IncidentActionLog`
 
 ### `com.spaceflight.support.domain.exception`
 
-- simple runtime exceptions for not found cases and invalid workflow operations
+- simple domain-level runtime exceptions for invalid workflow behavior
 
 ### `com.spaceflight.support.repository`
 
-- repository abstractions for passengers and incidents
+- repository abstractions for incidents and passengers
 
 ### `com.spaceflight.support.repository.inmemory`
 
-- in-memory repository implementations used by the proof of concept
+- proof-of-concept storage used for demo and tests
 
 ### `com.spaceflight.support.service`
 
-- service interfaces used by the UI
-- explicit use-case boundary for incident handling
+- use-case interfaces for incident handling and support availability
 
 ### `com.spaceflight.support.service.dto`
 
-- simple request object for incident creation
+- request object for incident creation
 
 ### `com.spaceflight.support.service.impl`
 
-- service implementations
-- workflow rule definition in `IncidentWorkflowRules`
+- incident workflow logic
+- escalation rules
+- fallback handling
+- workflow transition validation
 
 ### `com.spaceflight.support.ui`
 
-- JavaFX dashboard UI
-- user interactions
+- JavaFX presentation layer
+- `Mission Control` tab for onboard support and base station
+- `Passenger Console` tab for the in-seat display interaction
 - drag-and-drop board rendering
 - detail and history visualization
 
 ## Main Program Flow
 
-1. `SpaceFlightSupportApplication` starts the JavaFX application.
-2. `ApplicationBootstrap` creates repositories and services.
-3. `DemoDataInitializer` seeds passengers and initial incidents.
-4. `MainDashboardView` renders the dashboard.
-5. User actions in the UI call service methods.
-6. Services validate workflow rules, apply business logic, and update incidents.
-7. The UI refreshes and visualizes the latest state.
+1. `SpaceFlightSupportApplication` starts JavaFX.
+2. `ApplicationBootstrap` wires repositories and services.
+3. `DemoDataInitializer` seeds demo passengers and incidents.
+4. `MainDashboardView` renders two tabs:
+   - `Mission Control`
+   - `Passenger Console`
+5. User actions in either tab call the service layer.
+6. Services validate the workflow and update incidents.
+7. The UI refreshes and visualizes the newest state.
 
-## Main Design Decisions
+## Key Design Decisions
+
+### Figma Used as Design Input, Not as Web Technology
+
+The professor requires Java, so the Figma design was translated into JavaFX instead of HTML or CSS frameworks.
+
+Result:
+
+- visual inspiration is reused
+- technical constraints are still respected
 
 ### Service Layer as Process Boundary
 
-The most important design decision is that the JavaFX layer does not decide:
+The UI never decides:
 
-- whether a move is allowed
 - whether escalation is required
-- whether an action is valid
+- whether a drag-and-drop move is valid
+- whether an action is allowed
 
-All of that happens in `IncidentServiceImpl`.
+These decisions stay in `IncidentServiceImpl`.
 
-### Repository Abstractions
+### Passenger Console + Mission Control
 
-Repositories are interfaces because the prototype should be explainable as a future-ready design:
+The professor asked for meaningful interaction, not just reporting.
 
-- today: in-memory data
-- later: JDBC or another persistence mechanism
+That is why the architecture now supports two UI perspectives:
 
-The UI and service interfaces do not need to change if persistence changes.
+- passenger perspective through the seat display
+- operational perspective through the support dashboard
 
-### Enums for Workflow Stability
+### Flight Phase as a First-Class Workflow Context
 
-Statuses and severities are modeled as enums because they are limited, central workflow concepts:
+The feedback about launch and landing created a real modeling need:
 
-- `IncidentStatus`
-- `IncidentSeverity`
-- `ResponsibleRole`
-- `SupportActionType`
+- sometimes nobody in the cabin can move
+- the software still has to do something useful
 
-This keeps the code readable and reduces invalid states.
-
-### Drag-and-Drop Without Business Logic in UI
-
-The UI only visualizes the board and forwards user actions.
-The board checks allowed transitions through the service layer.
-This keeps the drag-and-drop feature meaningful and not just decorative.
+`FlightPhase` makes this explicit in the UI and in the documented process.
 
 ## SOLID Usage
 
 ### Single Responsibility Principle
 
-- `Passenger` only models passenger data.
-- `Incident` only models incident state and history.
-- `IncidentServiceImpl` contains the incident use-case logic.
-- `MainDashboardView` only handles UI behavior.
-- `DemoDataInitializer` only creates demo data.
+- `Passenger` models passenger data only
+- `Incident` models workflow state and action history only
+- `IncidentServiceImpl` contains use-case logic
+- `MainDashboardView` handles JavaFX interactions only
+- `DemoDataInitializer` seeds demo data only
 
 ### Open/Closed Principle
 
-The architecture is open for extension through:
+The design is open for extension through:
 
 - new repository implementations
-- new UI views
-- additional service methods
+- additional views
+- additional service operations
 
-without rewriting the existing structure.
+without changing the overall structure.
 
 ### Liskov Substitution Principle
 
@@ -130,7 +146,7 @@ Repository and service interfaces can be replaced by compatible implementations 
 
 ### Interface Segregation Principle
 
-The prototype keeps interfaces small:
+Interfaces are small and focused:
 
 - `PassengerService`
 - `IncidentService`
@@ -138,16 +154,11 @@ The prototype keeps interfaces small:
 
 ### Dependency Inversion Principle
 
-The service layer depends on repository abstractions, not concrete storage classes.
+The service layer depends on repository abstractions instead of concrete storage classes.
 
-## Why This Scope Fits a Proof of Concept
+## Why This Architecture Fits the Grading Context
 
-This architecture is large enough to demonstrate:
-
-- process thinking
-- business rules
-- exception handling
-- maintainability
-- UI support for a defined workflow
-
-It is also small enough to explain in a short presentation and realistic for a student team.
+- easy to explain in a short presentation
+- clearly separates UI and process logic
+- supports both the normal and exception case
+- realistic enough to show engineering quality without overengineering
