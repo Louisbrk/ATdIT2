@@ -1,174 +1,299 @@
-# Space Flight Support POC
+# SpaceFlight
+SpaceFlight is a program developed in our university lecture called ATdIT.
+It simulates a shuttle flight and supports ground crew and passengers during the flight with a focus on AI Health monitoring and prioritisation.
 
-## Project Purpose
-
-This repository contains a focused JavaFX proof of concept for the **Space Flight** phase of a fictional space tourism company. The prototype supports one core process only:
-
-**In-Flight Passenger Support and Emergency Escalation**
-
-The goal is to show how passengers, onboard support staff, and base-station staff can manage in-flight incidents in a structured, traceable, and presentation-ready way.
-
-## Problem Statement
-
-During the actual space flight, passengers may experience:
-
-- fear, stress, or panic
-- nausea or motion sickness
-- abnormal health symptoms
-- situations where onboard support becomes unavailable
-
-The existing process is assumed to be too ad hoc. This prototype introduces a workflow-driven process with status transitions, escalation rules, and transparent action logging.
-
-## Personas
-
-- Passenger: reports discomfort and receives support through the seat display
-- Onboard Support: handles normal in-flight cases
-- Base Station Operator: takes over escalated or fallback cases
-- Remote Doctor / Psychologist: currently documented as mocked extension roles for escalated cases
-
-Detailed personas are documented in [docs/PERSONAS.md](docs/PERSONAS.md).
-
-## Implemented Features
-
-- JavaFX desktop application
-- two interactive views: `Mission Control` and `Passenger Console`
-- passenger overview panel
-- seat-display inspired passenger dashboard with interactive help buttons
-- incident creation form
-- drag-and-drop incident workflow board
-- workflow states: `New`, `Assessing`, `Monitoring`, `Escalated`, `Resolved`
-- onboard support handling for normal incidents
-- automatic escalation of `CRITICAL` incidents
-- fallback escalation when onboard support is unavailable
-- flight-phase handling for launch, orbit, and landing constraints
-- launch and landing exception handling when crew movement is blocked
-- base-station takeover for escalated cases
-- incident detail panel and action history
-- in-memory repositories with realistic demo data
-- JUnit tests for the most important business rules
-
-## Mocked Features
-
-- real medical devices and suit telemetry
-- spacecraft control systems
-- network communication between spacecraft and base station
-- external database persistence
-- AI diagnosis and analytics
-- full doctor / psychologist workflows beyond UI placeholders and documentation
-- advanced authentication and authorization
-
-## Architecture Summary
-
-The project uses a small layered architecture:
-
-- `domain`: entities, enums, domain exceptions
-- `repository`: repository abstractions and in-memory implementations
-- `service`: business rules and use-case logic
-- `ui`: JavaFX presentation layer
-- `app`: bootstrap, logging configuration, demo data
-
-The design deliberately follows **SOLID**, **DRY**, **KISS**, and **YAGNI**:
-
-- UI does not contain business rules.
-- services contain workflow and escalation logic.
-- repositories are abstractions.
-- enums model stable workflow concepts.
-- the scope stays small and demo-focused.
-
-More detail is available in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
-
-## How to Run
-
-Prerequisites:
-
-- Java 25
-- internet connection for the first Maven-wrapper download
-
-The repository already contains the Maven wrapper, so a separate Maven installation is optional.
-Important: the terminal must be able to find the JDK. That means either:
-
-- `JAVA_HOME` points to your JDK 25 folder, or
-- `java` is available on your `PATH`
-
-### Windows
-
-Check first:
-
-```powershell
-java -version
-```
-
-If that fails, set the JDK for the current terminal session:
-
-```powershell
-$env:JAVA_HOME="C:\Path\To\JDK-25"
-$env:Path="$env:JAVA_HOME\bin;$env:Path"
-java -version
-```
-
-Example for the local setup used during development:
-
-```powershell
-$env:JAVA_HOME="C:\Users\18266\.jdks\openjdk-25.0.2"
-$env:Path="$env:JAVA_HOME\bin;$env:Path"
-```
-
-Then run:
-
-```powershell
-.\mvnw.cmd test
-.\mvnw.cmd javafx:run
-```
-
-### macOS / Linux
-
-Check first:
-
+To run:
 ```bash
-java -version
-```
-
-If that fails, set the JDK for the current shell session:
-
-```bash
-export JAVA_HOME=/path/to/jdk-25
-export PATH="$JAVA_HOME/bin:$PATH"
-java -version
-```
-
-Then run:
-
-```bash
-chmod +x mvnw
-./mvnw test
 ./mvnw javafx:run
 ```
 
-### IntelliJ IDEA
+---
 
-1. Open the repository as a Maven project.
-2. Set the Project SDK to `JDK 25`.
-3. Refresh Maven if IntelliJ imported with a different JDK.
-4. Run either the main class `com.spaceflight.support.SpaceFlightSupportApplication` or the Maven goal `javafx:run`.
+## Features
 
-If Maven reports `release version 25 not supported`, IntelliJ or the terminal is using the wrong JDK.
-If Maven reports that `JAVA_HOME` is not defined correctly, your terminal cannot currently find the JDK.
+### Dashboards
 
-## Scope Reminder
+| Dashboard | Description |
+|-----------|-------------|
+| **Overview** | Route map, flight telemetry, passenger overview, emergency landing button |
+| **AI Health** | Live health classification (GREEN/YELLOW/RED), 4 vital trend charts per passenger, manual override buttons |
+| **Emergency Alert** | Active incident display with severity controls and resolution |
+| **Psychological Support** | Relaxed-mode passenger support requests with severity levels |
+| **Passenger Dashboard** | Per-passenger flight view with mode switching, settings (volume, brightness, language), and alert/psychological help triggers |
 
-Your team may maintain a broader Signavio overview of the entire space-flight phase, but this repository implements only the detailed in-flight support sub-process after the professor feedback:
+### Passenger Settings
 
-- normal support during flight
-- emergency escalation
-- launch / landing fallback when nobody can move in the cabin
+Each passenger dashboard has a gear icon (top-right) opening a settings dialog:
+- **Volume** — slider (mock, no audio)
+- **Brightness** — slider controlling dashboard opacity
+- **Language** — toggle between English (default) and Deutsch
 
-It does **not** implement check-in or the full end-to-end flight business process.
+### Experience Modes
 
-## Documentation Index
+Passengers can switch between three modes that affect both the dashboard theme and health classification thresholds:
+- **Relaxed** — soft green theme, stricter health thresholds
+- **Normal** — standard theme and thresholds
+- **Action** — dark navy/orange theme, more lenient thresholds for elevated vitals
 
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- [docs/SCOPE.md](docs/SCOPE.md)
-- [docs/USER_MANUAL.md](docs/USER_MANUAL.md)
-- [docs/PERSONAS.md](docs/PERSONAS.md)
-- [docs/PROCESS_DESCRIPTIONS.md](docs/PROCESS_DESCRIPTIONS.md)
-- [docs/TESTING.md](docs/TESTING.md)
+### Health Evaluation Algorithms
+
+- **KnnHealthEvaluationService** (active) — k=5 nearest neighbours with demographic matching, per-vital z-scores, hysteresis buffer, and safety floors
+- **WeightedZScoreEvaluationService** — alternative demographic z-score based classifier
+- **DefaultHealthEvaluationService** (legacy) — simple threshold classifier, kept for comparison
+
+### Headless Simulation
+
+`HeadlessSimulationRunner` runs a full flight simulation without UI for tuning and evaluation:
+```bash
+./mvnw compile exec:java -Dexec.mainClass="org.example.spaceflight.simulation.HeadlessSimulationRunner"
+```
+
+---
+
+## AI Health Classification
+
+### Training Data (`src/main/resources/training_data.csv`)
+
+The classifier is trained on **144 labelled cases** covering all demographic segments of the passenger population.
+
+**CSV format:**
+
+```
+bpm, spo2, systolic, diastolic, respRate, ageGroup, gender, mode, label
+```
+
+| Column | Type | Values |
+|--------|------|--------|
+| `bpm` | int | Heart rate in beats per minute |
+| `spo2` | double | Blood oxygen saturation in % |
+| `systolic` | int | Systolic blood pressure in mmHg |
+| `diastolic` | int | Diastolic blood pressure in mmHg |
+| `respRate` | int | Respiratory rate in breaths per minute |
+| `ageGroup` | enum | `YOUNG` (< 30), `MIDDLE` (30–50), `SENIOR` (> 50) |
+| `gender` | enum | `MALE`, `FEMALE` |
+| `mode` | enum | `RELAXED`, `NORMAL`, `ACTION` |
+| `label` | enum | `GREEN` (healthy), `YELLOW` (warning), `RED` (critical) |
+
+The dataset covers all **18 demographic segments** (3 age groups × 2 genders × 3 experience modes), each with representative GREEN, YELLOW and RED cases. Comments starting with `#` are ignored by the parser.
+
+Baseline values are derived from published clinical reference ranges (AHA / ESC normal ranges segmented by age and sex). The `mode` column reflects expected physiological arousal:
+- **ACTION** mode: higher BPM and blood pressure values are still considered normal (passengers are in an excited state)
+- **RELAXED** mode: stricter thresholds — elevated stress indicators are flagged earlier
+- **NORMAL** mode: standard clinical reference values
+
+---
+
+### Classification Algorithm (k-Nearest Neighbours)
+
+The health status of each passenger is determined at every simulation tick by a **k-Nearest Neighbours (kNN)** classifier implemented in `KnnHealthEvaluationService`.
+
+#### Step 1 — Feature normalisation
+
+All five vital features are normalised to **[0, 1]** using the min/max values derived from the training set:
+
+```
+normalised = (value - min) / (max - min)
+```
+
+This ensures that features with larger absolute ranges (e.g. blood pressure 80–200) do not dominate features with smaller ranges (e.g. SpO2 80–100).
+
+#### Step 2 — Weighted Euclidean distance
+
+For each training case the distance to the current observation is computed as a **weighted Euclidean distance**:
+
+```
+d = sqrt( W_SpO2  * (Δspo2)²
+        + W_Sys   * (Δsystolic)²
+        + W_BPM   * (Δbpm)²
+        + W_Dias  * (Δdiastolic)²
+        + W_RR    * (ΔrespRate)² )
+```
+
+Feature weights reflect medical importance in an aerospace context:
+
+| Feature | Weight |
+|---------|--------|
+| SpO2 | 0.30 |
+| Systolic BP | 0.25 |
+| BPM | 0.20 |
+| Diastolic BP | 0.15 |
+| Respiratory Rate | 0.10 |
+
+#### Step 3 — Demographic context bonus
+
+If a training case shares the same **age group**, **gender**, or **experience mode** as the passenger, a small distance bonus (`-0.08` per match) is applied. This ensures demographically similar cases are preferred as neighbours, so a senior male in ACTION mode is compared primarily against other senior male ACTION cases.
+
+#### Step 4 — Majority vote (k = 5)
+
+The **5 nearest neighbours** are selected and their labels are counted. The label with the most votes determines the overall health status:
+
+```
+GREEN=2, YELLOW=1, RED=2  →  RED wins (tie-break favours the more critical status)
+```
+
+#### Step 5 — Per-vital status via Z-Score
+
+Independently of the kNN vote, each individual vital sign is classified by computing a **z-score** against a demographic population baseline (stored in `VitalProfileTable`):
+
+```
+z = |value - population_mean| / population_stdDev
+```
+
+- `z < 1.0` → GREEN
+- `1.0 ≤ z < 2.0` → YELLOW
+- `z ≥ 2.0` → RED
+
+This drives the colour of each individual vital row in the dashboard (BPM, SpO2, BP, RR shown in green / amber / red independently).
+
+#### Step 6 — Hard floor rule
+
+If any single vital is classified as RED by the z-score, the overall status is elevated to RED regardless of the kNN vote. A single critical vital sign always constitutes a medical emergency.
+
+---
+
+## Architecture
+
+### Current design (single-process)
+
+All dashboards run in the same JVM. `SpaceFlightApp` is the entry point and owns
+the lifecycle. All services are created once and shared as interface references.
+
+```
+SpaceFlightApp
+  └── AppContext                 (one class that knows all concrete implementations)
+        ├── SimulationService
+        ├── FlightSimulationService
+        ├── VitalSignsGenerator
+        ├── AlertService
+        ├── PsychologicalSupportService
+        └── IPassengerRegistry
+```
+
+Every simulation tick `SpaceFlightApp` does three things:
+
+1. Updates the flight state and generates new vital signs (server-side work).
+2. Builds a `SimulationSnapshot` — an immutable, serialisation-ready data object.
+3. Pushes the snapshot to all views via `Platform.runLater`.
+
+```
+Simulation tick
+  │
+  ├─ flightSimulationService.update()
+  ├─ vitalSignsGenerator.generateNext()  ← mutates Passenger objects
+  │
+  ├─ new SimulationSnapshot(state, passengers, ...)   ← serialisable boundary
+  │
+  ├─ Base-station views  (use live objects — same process as the simulation)
+  │     BaseStationView.updateFlightInfo(ShuttleState)
+  │     AiHealthDashboardView.update(List<Passenger>, FlightPhase)
+  │
+  └─ Client-facing views  (receive only the snapshot — no direct object refs)
+        PassengerDashboardView.update(SimulationSnapshot)
+        StewardessInboxView.update(SimulationSnapshot)
+```
+
+Alert and psychological-support events travel via listener callbacks
+(`AlertService.setOnAlertRaised`, `PsychologicalSupportService.setOnRequestRaised`).
+
+---
+
+### Preparing for client-server (future work)
+
+The codebase is structured so that moving to HTTP requires **no changes to any
+view or business-logic class**. The only things that change are the concrete
+implementations behind the existing service interfaces.
+
+#### What would change
+
+| Today | After HTTP migration |
+|-------|----------------------|
+| `AppContext` creates local `DefaultAlertService` | Server: same. Client: `HttpAlertServiceClient` implements `AlertService` |
+| `DefaultSimulationService` fires a JavaFX Timeline | Server: same. Clients subscribe to a WebSocket or SSE stream |
+| Tick data passed in-memory as `SimulationSnapshot` | Server serialises `SimulationSnapshot` to JSON; clients deserialise it |
+| Alert/psych listener callbacks fire in-process | Server publishes events via WebSocket; clients poll or subscribe |
+
+#### Step-by-step migration path
+
+**Step 1 — Introduce `ClientAppContext`**
+
+Create a second implementation of the context that returns HTTP-backed service
+implementations:
+
+```java
+// Today (local):
+public class AppContext {
+    private final AlertService alertService = new DefaultAlertService();
+    // ...
+}
+
+// Future (HTTP client):
+public class ClientAppContext {
+    private final AlertService alertService = new HttpAlertServiceClient("https://server/api");
+    // ...
+}
+```
+
+`SpaceFlightApp` (or a new `ClientApp`) swaps in `ClientAppContext` — nothing
+else changes.
+
+**Step 2 — Implement `HttpAlertServiceClient`**
+
+```java
+public class HttpAlertServiceClient implements AlertService {
+    // raiseAlert()   → POST /api/alerts
+    // resolveAlert() → DELETE /api/alerts/{id}
+    // getActiveAlerts() → GET /api/alerts
+    // setOnAlertRaised() → subscribe to WebSocket topic /topic/alerts
+}
+```
+
+Every other class that holds an `AlertService` reference is unaffected.
+
+**Step 3 — Expose a REST + WebSocket server**
+
+Add a lightweight embedded server (e.g. Javalin or Spring Boot) to the
+Base-Station process. It exposes:
+
+```
+GET  /api/simulation/snapshot   → latest SimulationSnapshot as JSON
+POST /api/alerts                → raise an alert
+DELETE /api/alerts/{id}         → resolve an alert
+POST /api/psych/requests        → raise a psych-support request
+WS   /ws/simulation             → push SimulationSnapshot each tick
+WS   /ws/events                 → push alert / psych events
+```
+
+`SimulationSnapshot`, `PassengerSnapshot`, `ShuttleState` and `VitalSigns` are
+already plain Java objects with only primitive fields — they can be serialised
+to JSON by any standard library (Jackson, Gson) without modification.
+
+**Step 4 — Split into separate processes / devices**
+
+- **Server process**: runs `DefaultSimulationService`, all `Default*` services,
+  the embedded REST/WebSocket server.
+- **Base Station client**: connects to the server, uses the existing
+  `BaseStationView` and `AiHealthDashboardView` (they can keep using the
+  local-object API because they run on the same device as the server, or switch
+  to HTTP too).
+- **Passenger client**: a minimal JavaFX app that holds only
+  `PassengerDashboardView`, connects to `ClientAppContext`, receives snapshots
+  via WebSocket.
+- **Stewardess client**: same pattern with `StewardessInboxView`.
+
+#### Why the current code is already prepared
+
+- **Service interfaces exist** for every backend concern. Views never import a
+  `Default*` class directly.
+- **`AppContext`** is the single place that knows concrete implementations.
+  Replacing it is a one-line change in `SpaceFlightApp`.
+- **`SimulationSnapshot`** is already an immutable, copyable data object.
+  Adding `@JsonProperty` annotations (or a Jackson `ObjectMapper`) is all that
+  is needed to serialise it.
+- **`PassengerDashboardView.update(SimulationSnapshot)`** and
+  **`StewardessInboxView.update(SimulationSnapshot)`** already accept the
+  snapshot type — not the raw `Passenger` object. Over HTTP, the server just
+  sends JSON, the client deserialises it into a `SimulationSnapshot`, and calls
+  the same method.
+- **Alert / psych listeners** (`setOnAlertRaised`, `setOnRequestRaised`) have
+  the right shape for a future WebSocket subscription — only the transport
+  underneath changes.

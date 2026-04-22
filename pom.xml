@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.spaceflight</groupId>
-    <artifactId>space-flight-support-poc</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
-    <name>Space Flight Support POC</name>
-    <description>JavaFX proof of concept for in-flight passenger support and emergency escalation.</description>
+    <groupId>de.hs.ibait</groupId>
+    <artifactId>space-flight-simulation</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <name>Space Flight Simulation</name>
+    <description>JavaFX prototype for AI-driven health monitoring during a space tourism flight (ATdIT university project).</description>
 
     <properties>
-        <maven.compiler.release>25</maven.compiler.release>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <javafx.version>21.0.2</javafx.version>
-        <junit.version>5.10.2</junit.version>
+        <javafx.version>24</javafx.version>
     </properties>
 
     <dependencies>
@@ -24,10 +24,9 @@
             <version>${javafx.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <version>${javafx.version}</version>
         </dependency>
     </dependencies>
 
@@ -38,15 +37,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
                 <configuration>
-                    <release>${maven.compiler.release}</release>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.2.5</version>
-                <configuration>
-                    <useModulePath>false</useModulePath>
+                    <source>25</source>
+                    <target>25</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -54,7 +46,7 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
                 <configuration>
-                    <mainClass>com.spaceflight.support.SpaceFlightSupportApplication</mainClass>
+                    <mainClass>org.example.spaceflight.app.Launcher</mainClass>
                 </configuration>
             </plugin>
         </plugins>
