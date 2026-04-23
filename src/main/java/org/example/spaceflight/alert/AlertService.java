@@ -12,6 +12,7 @@ public interface AlertService {
 
     void resolveAlert(String alertId);
 
+    /** Currently not needed, but implemented as preparation for Client-Server Architecture. */
     List<AlertIncident> getActiveAlerts();
 
     List<AlertIncident> getAlertsForPassenger(Passenger passenger);
