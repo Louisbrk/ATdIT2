@@ -39,15 +39,6 @@ public class DefaultAlertService implements AlertService {
     }
 
     @Override
-    public List<AlertIncident> getActiveAlerts() {
-        List<AlertIncident> active = new ArrayList<>();
-        for (AlertIncident incident : incidents) {
-            if (!incident.isResolved()) active.add(incident);
-        }
-        return active;
-    }
-
-    @Override
     public List<AlertIncident> getAlertsForPassenger(Passenger passenger) {
         List<AlertIncident> result = new ArrayList<>();
         for (AlertIncident incident : incidents) {

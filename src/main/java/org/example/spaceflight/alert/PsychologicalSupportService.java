@@ -12,9 +12,6 @@ public interface PsychologicalSupportService {
 
     void resolveRequest(String id);
 
-    /** Currently not needed, but implemented as preparation for Client-Server Architecture. */
-    List<PsychologicalIncident> getActiveRequests();
-
     void setOnRequestRaised(Consumer<PsychologicalIncident> handler);
 
     void setOnRequestResolved(Consumer<PsychologicalIncident> handler);
