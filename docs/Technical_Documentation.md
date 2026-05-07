@@ -191,7 +191,7 @@ Klasse Model ausfüllen!
 
 ## 6. Service Layer
 
-Mache ich noch
+Tim Service Layer erklären, wie App Context funktioniert (Launcher wkt eher dann bei Build and run erklären; Space Fligt app da erklären wo sie reinpasst)
 
 ## 7. Simulation Engine
 
@@ -205,7 +205,127 @@ Health Classification
 
 ## 9. Alert and Psychological Support System
 
-Mach ich noch
+There are currently 2 Types of Alarms exisiting in the programm.
+1. User triggered Emergency Alert
+2. Psychological Support Alert
+
+```mermaid
+classDiagram
+    direction TB
+    %% ─────────────────── model ───────────────────
+
+    namespace model {
+        class Passenger {
+            +String name
+            +int age
+            +Gender gender
+            +String role
+            +ExperienceMode experienceMode
+            +VitalSigns vitalSigns
+            +HealthStatus healthStatus
+            +boolean manualOverride
+            +isCrewMember() boolean
+        }
+    }
+
+    %% ─────────────────── alert ───────────────────
+
+    namespace alert {
+        class PsychSeverity {
+            <<enumeration>>
+            LOW
+            MEDIUM
+            HIGH
+        }
+
+        class Incident {
+            <<interface>>
+            +getId() String
+            +getPassenger() Passenger
+            +getReason() String
+            +getFormattedTime() String
+            +isResolved() boolean
+            +setResolved(boolean)
+            +getStewardessNote() String
+            +setStewardessNote(String)
+        }
+
+        class AlertIncident {
+            +String id
+            +String reason
+            +LocalDateTime timestamp
+            +boolean resolved
+            +String stewardessNote
+        }
+
+        class PsychologicalIncident {
+            +String id
+            +String reason
+            +PsychSeverity severity
+            +LocalDateTime timestamp
+            +boolean resolved
+            +String stewardessNote
+        }
+
+        class AlertService {
+            <<interface>>
+            +raiseAlert(passenger, reason)
+            +resolveAlert(alertId)
+            +getActiveAlerts() List~AlertIncident~
+            +getAlertsForPassenger(p) List~AlertIncident~
+            +getAllAlertsForPassenger(p) List~AlertIncident~
+            +setOnAlertRaised(handler)
+            +setOnAlertResolved(handler)
+        }
+
+        class DefaultAlertService {
+        }
+
+        class PsychologicalSupportService {
+            <<interface>>
+            +raiseRequest(passenger, severity, message)
+            +resolveRequest(id)
+            +getActiveRequests() List~PsychologicalIncident~
+            +setOnRequestRaised(handler)
+            +setOnRequestResolved(handler)
+        }
+
+        class DefaultPsychologicalSupportService {
+        }
+    }
+
+    %% ─────────────────── app ───────────────────
+
+    namespace app {
+        class AppContext {
+            +getSimulationService()
+            +getFlightSimulationService()
+            +getVitalSignsGenerator()
+            +getPassengerRegistry()
+            +getAlertService()
+            +getPsychService()
+            +getExperienceModeService()
+        }
+    }
+
+    %% ─────────────────── relations ───────────────────
+
+    DefaultAlertService ..|> AlertService
+    DefaultPsychologicalSupportService ..|> PsychologicalSupportService
+    AlertIncident ..|> Incident
+    PsychologicalIncident ..|> Incident
+
+    AlertIncident --> Passenger : raised for
+    PsychologicalIncident --> Passenger : raised for
+    PsychologicalIncident --> PsychSeverity
+
+    AppContext ..> AlertService : creates
+    AppContext ..> PsychologicalSupportService : creates
+```
+As you can see we have one Incident Interface which the 2 alert types are implementing. We also have one Service for each Alarm Type which handles it.
+
+
+
 
 ## 10. UI Layer
 
