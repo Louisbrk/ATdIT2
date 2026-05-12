@@ -28,7 +28,6 @@ public class AlertIncident implements Incident {
     public String getId() { return id; }
     public Passenger getPassenger() { return passenger; }
     public String getReason() { return reason; }
-    public LocalDateTime getTimestamp() { return timestamp; }
     public String getFormattedTime() { return timestamp.format(FMT); }
 
     public boolean isResolved() { return resolved; }
