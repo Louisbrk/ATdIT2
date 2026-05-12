@@ -76,9 +76,98 @@ The software provides **AI-driven health monitoring and passenger prioritization
 
 ## 3. Architecture Overview
 
-Bitte noch ausfüllen (Klasse App): Layered Architecture, Architectural Patterns (MVP, Service Layer, Observer, Composition Root), High-Level Diagramme und Data Flow...
---> siehe Readme
----
+The application follows a **layered single-process architecture** with clear interface boundaries so core services can later be replaced by remote (client/server) implementations.
+
+### 3.1 Layered Architecture
+
+| Layer | Main Package(s) | Responsibility |
+|---|---|---|
+| Bootstrap / Composition Root | `app` (`Launcher`, `SpaceFlightApp`, `AppContext`) | Application startup, dependency wiring, lifecycle |
+| Presentation | `ui.*` | JavaFX views and UI interaction logic (including MVP in passenger dashboard) |
+| Service / Use-Case | `simulation`, `health`, `alert` | Flight progression, vital generation, health classification, incident workflows |
+| Domain Model | `model` | Passenger, shuttle state, snapshots, enums and value objects |
+
+`SpaceFlightApp` is the orchestration center at runtime. `AppContext` is the only class that knows concrete service implementations.
+
+### 3.2 Architectural Patterns
+
+#### Service Layer
+- Service interfaces define use-cases (`SimulationService`, `FlightSimulationService`, `VitalSignsGenerator`, `HealthEvaluationService`, `AlertService`, `PsychologicalSupportService`).
+- UI classes depend on interfaces, not concrete implementations.
+- `AppContext` binds interfaces to local defaults (`Default*` classes).
+
+#### Composition Root
+- `Launcher.main()` starts JavaFX.
+- `SpaceFlightApp.start()` creates and wires the application graph.
+- `AppContext` is the composition root registry for concrete services.
+
+#### Observer / Event-Driven Updates
+- Tick-based updates: `SimulationService.addTickListener(...)`.
+- Alert events: callback registration (e.g. alert/psych request listeners).
+- JavaFX thread handoff: `Platform.runLater(...)` updates all UI views safely.
+
+#### MVP (where used)
+- Passenger dashboard follows MVP split (`PassengerDashboardView` + `PassengerDashboardPresenter`).
+- Presenter contains interaction/domain logic; view focuses on rendering and event forwarding.
+
+### 3.3 High-Level Component Diagram
+
+```mermaid
+flowchart TB
+    L[Launcher] --> A[SpaceFlightApp]
+    A --> C[AppContext]
+
+    C --> S1[SimulationService]
+    C --> S2[FlightSimulationService]
+    C --> S3[VitalSignsGenerator]
+    C --> S4[AlertService]
+    C --> S5[PsychologicalSupportService]
+    C --> S6[IPassengerRegistry]
+    C --> S7[ExperienceModeService]
+
+    A --> MW[MainWindow / Navigation]
+    MW --> BS[BaseStationView]
+    MW --> AI[AiHealthDashboardView]
+    MW --> EA[EmergencyAlertView]
+    MW --> PS[PsychologicalSupportView]
+
+    A --> PV[PassengerDashboardView]
+    A --> SV[StewardessInboxView]
+```
+
+### 3.4 Runtime Data Flow (per simulation tick)
+
+```mermaid
+sequenceDiagram
+    participant Sim as SimulationService
+    participant App as SpaceFlightApp
+    participant Flight as FlightSimulationService
+    participant Vital as VitalSignsGenerator
+    participant Model as Passenger/ShuttleState
+    participant Snap as SimulationSnapshot
+    participant UI as JavaFX Views
+
+    Sim->>App: tickCount
+    App->>Flight: update(tickCount)
+    App->>Vital: generateNext(passenger, phase)
+    Vital->>Model: mutate current VitalSigns
+    App->>Snap: build snapshot(state, passengers, emergencyProgress, tick)
+    App->>UI: Platform.runLater(...)
+    Note over UI: Base-station views use live objects
+    Note over UI: Passenger/Stewardess views use snapshot only
+```
+
+### 3.5 Client/Server Readiness (already coded)
+
+- **Interface-first design** across services enables swapping local implementations for remote adapters.
+- **Snapshot boundary** already exists (`SimulationSnapshot`): client-facing views consume serializable snapshot data instead of direct object references.
+- **`AppContext` swap strategy**: migration to client/server mainly requires replacing local `Default*` services with HTTP/gRPC-backed implementations while keeping most view/controller code stable.
+
+### 3.6 Current Scope vs Future Split
+
+- **Current:** all modules run in one JVM process (JavaFX desktop app).
+- **Future-ready seams already present:** service interfaces, callback/event contracts, and snapshot-based data transport.
+--- 
 
 ## 4. Package Structure
 
@@ -196,7 +285,83 @@ Klasse Model ausfüllen!
 
 ## 6. Service Layer
 
-Tim Service Layer erklären, wie App Context funktioniert (Launcher wkt eher dann bei Build and run erklären; Space Fligt app da erklären wo sie reinpasst)
+The Service Layer encapsulates all application use-cases behind interfaces and keeps UI code independent from concrete implementations.
+
+### 6.1 Purpose of the Service Layer
+
+- Centralizes core behavior (simulation timing, flight state, vital generation, alerts, psych support, mode changes).
+- Exposes stable contracts to the UI.
+- Allows implementations to be replaced (e.g., local in-memory today, remote API later) without rewriting views.
+
+### 6.2 Core Service Contracts and Default Implementations
+
+| Interface | Default Implementation | Responsibility |
+|---|---|---|
+| `SimulationService` | `DefaultSimulationService` | Tick loop control (start/stop/listeners) |
+| `FlightSimulationService` | `DefaultFlightSimulationService` | Flight phase progression and emergency landing flow |
+| `VitalSignsGenerator` | `DefaultVitalSignsGenerator` | Generates next vital-sign values per passenger and phase |
+| `AlertService` | `DefaultAlertService` | Emergency incident lifecycle and listeners |
+| `PsychologicalSupportService` | `DefaultPsychologicalSupportService` | Psychological support requests and listeners |
+| `IPassengerRegistry` | `PassengerRegistry` | Passenger lookup/list for runtime |
+| `ExperienceModeService` | `DefaultExperienceModeService` | Mode changes (`RELAXED`, `NORMAL`, `ACTION`) |
+
+### 6.3 How `AppContext` works
+
+`AppContext` is the service registry and local composition container:
+
+1. In its constructor, it instantiates all default concrete services exactly once.
+2. It stores them as interface types.
+3. It exposes typed getters used by orchestration/UI classes.
+
+This gives a single source of wiring truth:
+
+```mermaid
+flowchart TB
+    AC[AppContext]
+    AC --> S1[SimulationService = DefaultSimulationService]
+    AC --> S2[FlightSimulationService = DefaultFlightSimulationService]
+    AC --> S3[VitalSignsGenerator = DefaultVitalSignsGenerator]
+    AC --> S4[AlertService = DefaultAlertService]
+    AC --> S5[PsychologicalSupportService = DefaultPsychologicalSupportService]
+    AC --> S6[IPassengerRegistry = PassengerRegistry]
+    AC --> S7[ExperienceModeService = DefaultExperienceModeService]
+```
+
+### 6.4 Where `SpaceFlightApp` fits
+
+`SpaceFlightApp` sits above the Service Layer as the runtime orchestrator:
+
+- pulls service interfaces from `AppContext`,
+- wires views to those services,
+- defines cross-service workflows (simulation tick pipeline, emergency landing propagation, dashboard updates),
+- acts as boundary coordinator between live domain objects and `SimulationSnapshot` for client-facing views.
+
+It does **not** implement low-level service logic itself; it coordinates existing services and UI components.
+
+### 6.5 Runtime interaction (Service Layer in action)
+
+```mermaid
+sequenceDiagram
+    participant App as SpaceFlightApp
+    participant Sim as SimulationService
+    participant Flight as FlightSimulationService
+    participant Vital as VitalSignsGenerator
+    participant Alert as AlertService/PsychService
+    participant UI as Views
+
+    App->>Sim: addTickListener(...)
+    Sim-->>App: tick
+    App->>Flight: update(tick)
+    App->>Vital: generateNext(passenger, phase)
+    App->>UI: update dashboards (live + snapshot)
+    UI->>Alert: raise/resolve incidents (callbacks/events)
+```
+
+### 6.6 Why this structure matters
+
+- **Separation of concerns:** UI remains presentation-focused.
+- **Testability:** interfaces allow mock/stub implementations.
+- **Replaceability:** migration path to client/server mostly requires replacing `AppContext` bindings with remote-backed services.
 
 ## 7. Simulation Engine
 
@@ -206,7 +371,193 @@ Muss noch gemacht werden! Simulation Engine: Tick Loop, Flight Phases, Vital Sig
 
 ## 8. AI Health Classification
 
-Health Classification
+The AI Health subsystem classifies each passenger into `GREEN`, `YELLOW`, or `RED` on every simulation tick and provides both:
+- an **overall health status** (for prioritization), and
+- **per-vital statuses** (for detailed visualization in the AI dashboard cards).
+
+### 8.1 Scope and runtime role
+
+- Package: `org.example.spaceflight.health`
+- Input: current `VitalSigns`, `Passenger` demographics, `FlightPhase`
+- Output: immutable `HealthEvaluationResult` with overall + per-vital status
+- Main consumer: `AiHealthDashboardView` (via orchestrator)
+- Current active classifier: **`KnnHealthEvaluationService`**
+
+### 8.2 Class inventory (health package)
+
+| Class / Interface | Type | Purpose | Currently used |
+|---|---|---|---|
+| `HealthEvaluationService` | Interface | Contract to classify one passenger | Yes |
+| `KnnHealthEvaluationService` | Class | Active kNN-based classifier with safety logic | Yes |
+| `WeightedZScoreEvaluationService` | Class | Alternative weighted z-score classifier | No (not wired) |
+| `IHealthEvaluationOrchestrator` | Interface | Batch evaluation + result lookup contract | Yes |
+| `HealthEvaluationOrchestrator` | Class | Runs evaluation for all passengers and caches latest result | Yes |
+| `HealthEvaluationResult` | Class | Immutable result DTO (overall + per-vital map) | Yes |
+| `VitalType` | Enum | Vital dimensions (`BPM`, `SPO2`, `SYSTOLIC_BP`, `DIASTOLIC_BP`, `RESP_RATE`) | Yes |
+| `IVitalProfileProvider` | Interface | Baseline lookup abstraction by demographics + mode | Yes |
+| `VitalProfileTable` | Class | In-memory baseline table for all demographic segments | Yes |
+| `VitalProfile` | Class | One baseline profile entry (mean, stdDev, weight) | Yes |
+| `ITrainingDataLoader` | Interface | Training data source abstraction | Yes |
+| `CsvTrainingDataLoader` | Class | Loads training cases from `/training_data.csv` | Yes |
+| `TrainingCase` | Class (package-private) | Parsed/normalized labeled case for kNN | Yes (internal) |
+| `AgeGroup` | Enum (package-private) | Age bucket mapping (`YOUNG`, `MIDDLE`, `SENIOR`) | Yes (internal) |
+
+### 8.3 Data model and training data
+
+Training data is loaded from `src/main/resources/training_data.csv` using `CsvTrainingDataLoader`.
+
+CSV columns:
+`bpm, spo2, systolic, diastolic, respRate, ageGroup, gender, mode, label`
+
+- Demographic segmentation: `3 age groups × 2 genders × 3 experience modes = 18` segments
+- Labels: `GREEN`, `YELLOW`, `RED`
+- Parsing behavior:
+  - ignores comments (`#`), empty rows, and header row
+  - malformed lines are skipped
+  - file-missing/failure returns empty list (with logging)
+
+### 8.4 Active classification pipeline (`KnnHealthEvaluationService`)
+
+#### Step 1 — Feature normalization
+
+Each vital feature is normalized to `[0,1]` using min/max from the loaded training set:
+
+`norm = (value - min) / (max - min)` (clamped to `[0,1]`).
+
+If `max == min`, fallback is `0.5`.
+
+#### Step 2 — Weighted Euclidean distance
+
+Distance to each training case:
+
+`d = sqrt(W_BPM*Δbpm² + W_SPO2*Δspo2² + W_SYS*Δsys² + W_DIAS*Δdias² + W_RR*Δrr²)`
+
+Feature weights:
+- `SPO2 = 0.30`
+- `SYSTOLIC = 0.25`
+- `BPM = 0.20`
+- `DIASTOLIC = 0.15`
+- `RESP_RATE = 0.10`
+
+#### Step 3 — Demographic context bonus
+
+Distance is reduced by `0.08` for each demographic match:
+- same `AgeGroup`
+- same `Gender`
+- same `ExperienceMode`
+
+This biases nearest neighbors toward medically comparable cases.
+
+#### Step 4 — kNN vote
+
+- `k = 5`
+- majority vote on nearest labels determines preliminary overall class
+- ties favor more critical outcome by implementation order (`RED` over `YELLOW` over `GREEN`)
+
+#### Step 5 — Per-vital z-score statuses
+
+Independently from kNN vote, each vital gets a z-score status using `VitalProfileTable` baselines:
+
+`z = |value - mean| / stdDev` (capped at `4.0`)
+
+Phase-aware thresholds in active kNN service:
+- `ASCENT/DESCENT`: yellow `1.6`, red `2.8`
+- `PRE_FLIGHT`: yellow `1.3`, red `2.3`
+- `ORBIT/LANDED`: yellow `1.3`, red `2.2`
+
+#### Step 6 — Escalation rules
+
+- If per-vital has `>= 2 RED`, overall becomes `RED`
+- Else if per-vital has `1 RED` or any `YELLOW`, overall is at least `YELLOW`
+- This can only escalate severity, not downgrade it
+
+#### Step 7 — Absolute safety floors (override all)
+
+Immediate `RED`, regardless of vote/hysteresis:
+- `SpO2 < 91.5`
+- `BPM > 155` or `BPM < 38`
+
+#### Step 8 — Hysteresis stabilization
+
+To prevent status flicker:
+- status change must persist for `7` consecutive ticks before commit
+- exception: `RED` can escalate immediately
+
+Per passenger, this is tracked by an internal `StatusBuffer`.
+
+### 8.5 Baseline profile system (`VitalProfileTable`)
+
+`VitalProfileTable` provides demographic + mode-specific normal ranges:
+- base values by age and gender
+- mode adjustments:
+  - `ACTION`: higher expected BPM/BP
+  - `RELAXED`: lower expected BPM/BP
+  - `NORMAL`: baseline
+
+It builds profiles for all 18 segments at startup and provides fallback profile:
+`MIDDLE + MALE + NORMAL` if key lookup fails.
+
+### 8.6 Batch orchestration (`HealthEvaluationOrchestrator`)
+
+`HealthEvaluationOrchestrator` applies classification to the full passenger list each tick:
+
+- skips passengers with `manualOverride = true`
+- skips passengers without current vitals
+- updates `Passenger.healthStatus`
+- caches latest `HealthEvaluationResult` per passenger
+- provides `getLatestResult(...)` for UI (default `allGreen()` before first evaluation)
+
+### 8.7 Runtime flow (health subsystem)
+
+```mermaid
+sequenceDiagram
+    participant UI as AiHealthDashboardView
+    participant Orch as HealthEvaluationOrchestrator
+    participant Cls as KnnHealthEvaluationService
+    participant Prof as VitalProfileTable
+    participant Data as CsvTrainingDataLoader
+
+    Note over Data,Cls: Training cases loaded once during classifier construction
+    UI->>Orch: evaluate(passengers, phase)
+    Orch->>Cls: evaluate(vitals, passenger, phase)
+    Cls->>Prof: lookup(age, gender, mode)
+    Cls-->>Orch: HealthEvaluationResult
+    Orch-->>UI: getLatestResult(passenger)
+```
+
+### 8.8 Alternative classifier (`WeightedZScoreEvaluationService`)
+
+This class is implemented but currently **not wired** in `SpaceFlightApp`.
+
+Characteristics:
+- computes per-vital z-scores against `VitalProfileTable`
+- computes weighted composite score
+- applies hard floor so worst per-vital status dominates overall
+
+Important current state:
+- supports same `HealthEvaluationService` interface
+- can be swapped in without changing dashboard code
+- `FlightPhase` parameter exists but is not currently used in this implementation
+
+### 8.9 Client/server readiness and currently unused seams
+
+Already prepared for future distribution:
+- interface boundaries (`HealthEvaluationService`, `ITrainingDataLoader`, `IVitalProfileProvider`, `IHealthEvaluationOrchestrator`)
+- immutable result object (`HealthEvaluationResult`)
+- clear orchestrator boundary between UI and classifier
+
+Currently local-only / not used remotely:
+- no HTTP/gRPC-based health service implementation yet
+- no remote training-data provider yet (CSV loader is local resource only)
+- no active runtime use of `WeightedZScoreEvaluationService`
+
+### 8.10 Behavioral notes and limitations
+
+- If training data is unavailable, classifier returns `allGreen()` defaults.
+- `TrainingCase` and `AgeGroup` are package-private by design (internal health implementation details).
+- `HealthEvaluationResult.getVitalStatuses()` is available but most UI calls access per-vital values via `getVitalStatus(...)`.
+
+---
 
 ## 9. Alert and Psychological Support System
 
