@@ -11,11 +11,16 @@
 7. [Simulation Engine](#7-simulation-engine) _(Package: simulation)_
 8. [AI Health Classification](#8-ai-health-classification) _(Package: health)_
 9. [Alert and Psychological Support System](#9-alert-and-psychological-support-system) _(Package: alert)_
+   - 9.1 [Overview](#91-overview)
+   - 9.2 [Class Diagram](#92-class-diagram)
+   - 9.3 [Alert Lifecycle](#93-alert-lifecycle)
+   - 9.4 [Service API Semantics](#94-service-api-semantics)
+   - 9.5 [Alert Flow](#95-alert-flow)
 10. [UI Layer](#10-ui-layer) _(Package: ui)_
-11. [Sequence Diagrams](#11-sequence-diagrams)
-12. [Build and Run](#12-build-and-run) _(Package: app)_
-13. [Future Migration Path](#13-future-migration-path)
+11. [Build and Run](#11-build-and-run) _(Package: app)_
+12. [Future Migration Path](#12-future-migration-path)
 - [Appendix A: Logging](#appendix-a-logging)
+- [Appendix B: Behavioral Guarantees and Limitations](#appendix-b-behavioral-guarantees-and-limitations)
 
 ---
 
@@ -205,9 +210,15 @@ Health Classification
 
 ## 9. Alert and Psychological Support System
 
-There are currently 2 Types of Alarms exisiting in the programm.
-1. User triggered Emergency Alert
+### 9.1 Overview
+
+There are currently two types of alerts in the program:
+1. User-triggered Emergency Alert
 2. Psychological Support Alert
+
+Psychological support is only available to passengers in RELAXED experience mode. If the passenger switches to NORMAL or ACTION mode, the psychological help button becomes inactive. Note: This constraint is enforced in the UI/presenter layer; the service API itself does not validate experience mode.
+
+### 9.2 Class Diagram
 
 ```mermaid
 classDiagram
@@ -271,7 +282,6 @@ classDiagram
             <<interface>>
             +raiseAlert(passenger, reason)
             +resolveAlert(alertId)
-            +getActiveAlerts() List~AlertIncident~
             +getAlertsForPassenger(p) List~AlertIncident~
             +getAllAlertsForPassenger(p) List~AlertIncident~
             +setOnAlertRaised(handler)
@@ -285,7 +295,6 @@ classDiagram
             <<interface>>
             +raiseRequest(passenger, severity, message)
             +resolveRequest(id)
-            +getActiveRequests() List~PsychologicalIncident~
             +setOnRequestRaised(handler)
             +setOnRequestResolved(handler)
         }
@@ -322,10 +331,72 @@ classDiagram
     AppContext ..> AlertService : creates
     AppContext ..> PsychologicalSupportService : creates
 ```
-As you can see we have one Incident Interface which the 2 alert types are implementing. We also have one Service for each Alarm Type which handles it.
 
+In general the package alerts only collaborates with model and app package:
 
+- **alert → model:** Both `AlertIncident` and `PsychologicalIncident` hold a direct reference to a `Passenger` from the model package. This association captures *which* passenger the incident was raised for. The alert package depends on model but never the other way around.
+- **app → alert:** `AppContext` acts as the composition root and is responsible for instantiating the concrete service implementations (`DefaultAlertService`, `DefaultPsychologicalSupportService`). It exposes them to the rest of the application only through the `AlertService` and `PsychologicalSupportService` interfaces which ensures that no other class knows about the concrete implementations.
 
+The `Incident` interface defines a common contract for both alert types. `AlertIncident` and `PsychologicalIncident` implement it, sharing the same lifecycle (see below) but differing in that `PsychologicalIncident` additionally carries a `PsychSeverity` level. Each incident type has its own dedicated service interface with a matching `Default*` implementation that manages the in-memory incident list and notifies registered listeners on state changes.
+
+### 9.3 Alert Lifecycle
+
+Both alert types share the same lifecycle:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Raised : raiseAlert() / raiseRequest()
+    Raised --> SentToStewardess : crew sends with note
+    Raised --> Resolved : resolveAlert() / resolveRequest()
+    SentToStewardess --> Resolved : stewardess resolves
+```
+The `SentToStewardess` state is a process/UI concept. In the model, only a `resolved` flag and an optional `stewardessNote` are stored ("sent" is not represented as a separate state field).
+
+### 9.4 Service API Semantics
+
+**Query semantics:**
+- `getAlertsForPassenger(p)` returns only unresolved (active) incidents for a passenger.
+- `getAllAlertsForPassenger(p)` returns the complete history (both resolved and unresolved).
+
+**Listener registration semantics:**
+The listener registration methods (`setOnAlertRaised`, `setOnAlertResolved`, etc.) do not replace existing handlers but append to an internal list. Multiple listeners can coexist and are called synchronously in the order they were registered. No unregistration API is provided.
+
+### 9.5 Alert Flow
+```mermaid
+sequenceDiagram
+    participant P as Passenger (UI)
+    participant PRE as PassengerDashboardPresenter
+    participant AS as AlertService
+    participant BSV as BaseStationView
+    participant EAV as EmergencyAlertView
+    participant APP as SpaceFlightApp
+    participant SIV as StewardessInboxView
+
+    P->>PRE: onAlertClicked()
+    PRE->>AS: raiseAlert(passenger, reason)
+
+    AS->>AS: create AlertIncident (UUID, timestamp)
+    AS->>AS: incidents.add(incident)
+
+    AS->>BSV: onAlertRaised callback
+    BSV->>BSV: setCardAlert(passenger, true)
+    Note over BSV: Alert dot visible on card
+
+    AS->>EAV: onAlertRaised callback
+    EAV->>EAV: create AlertIncidentCard
+    Note over EAV: Card with resolve/send buttons
+
+    EAV->>APP: onSendToStewardess(incident, crewMessage)
+    APP->>APP: incident.setStewardessNote(message)
+    APP->>SIV: receiveIncident(incident, message)
+    Note over SIV: Incident appears in inbox
+
+    SIV->>AS: resolveAlert(alertId)
+    AS->>BSV: onAlertResolved callback
+    BSV->>BSV: setCardAlert(passenger, false)
+```
+
+The sequence diagram above shows the complete lifecycle of a passenger-triggered alert. The flow starts at the passenger UI, passes through the `PassengerDashboardPresenter` into the `AlertService`, which stores the incident and notifies all registered listeners via callbacks. `BaseStationView` reacts by showing an alert indicator on the passenger card, while `EmergencyAlertView` creates a visual card with action buttons. When the crew decides to forward the alert, `SpaceFlightApp` acts as a mediator (via a `BiConsumer` callback), it attaches the crew note to the incident and delivers it to the `StewardessInboxView`. Finally, when the stewardess resolves the incident, the `AlertService` notifies all listeners again to clear the alert indicators.
 
 ## 10. UI Layer
 
@@ -333,19 +404,14 @@ UI: Dashboard Overview, Navigation, Theme System, AI Health Dashboard Layout und
 
 ---
 
-## 11. Sequence Diagrams
 
-Sequenzdiagramme fehlen noch
-
----
-
-## 12. Build and Run
+## 11. Build and Run
 
 Tim mach das: Prerequisites, Build-Commands, Entry Point und Run-Konfiguration._
 
 ---
 
-## 13. Future Migration Path
+## 12. Future Migration Path
 
 The codebase is deliberately structured so that moving from a single-process application to a client-server architecture requires **no changes to any view or business-logic class**.
 
@@ -378,3 +444,10 @@ Logged events include:
 - Emergency landing initiation
 - Experience mode changes
 - Manual override actions
+
+---
+
+## Appendix B: Behavioral Guarantees and Limitations
+
+- Thread-safety: Implementations are not thread-safe; they assume single-threaded JavaFX Application Thread usage.
+- Persistence: In-memory only; data resets on each application run.
