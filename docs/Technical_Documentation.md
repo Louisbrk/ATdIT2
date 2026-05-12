@@ -18,7 +18,7 @@
    - 9.5 [Alert Flow](#95-alert-flow)
 10. [UI Layer](#10-ui-layer) _(Package: ui)_
 11. [Build and Run](#11-build-and-run) _(Package: app)_
-12. [Future Migration Path](#12-future-migration-path)
+12. [Future Outlook](#12-future-outlook)
 - [Appendix A: Logging](#appendix-a-logging)
 - [Appendix B: Behavioral Guarantees and Limitations](#appendix-b-behavioral-guarantees-and-limitations)
 
@@ -77,7 +77,7 @@ The software provides **AI-driven health monitoring and passenger prioritization
 ## 3. Architecture Overview
 
 Bitte noch ausfüllen (Klasse App): Layered Architecture, Architectural Patterns (MVP, Service Layer, Observer, Composition Root), High-Level Diagramme und Data Flow...
-
+--> siehe Readme
 ---
 
 ## 4. Package Structure
@@ -406,24 +406,69 @@ UI: Dashboard Overview, Navigation, Theme System, AI Health Dashboard Layout und
 
 
 ## 11. Build and Run
+#### Prerequisites
 
-Tim mach das: Prerequisites, Build-Commands, Entry Point und Run-Konfiguration._
+- Java 25 (JDK)
+- Maven 3.x (or use the included `mvnw` wrapper)
+
+#### Commands
+
+```bash
+# Compile
+mvn clean compile
+
+# Run the application
+./mvnw javafx:run
+
+# Run tests
+mvn test
+
+# Package
+mvn package
+
+# Run headless simulation (for tuning/evaluation)
+./mvnw compile exec:java -Dexec.mainClass="org.example.spaceflight.simulation.HeadlessSimulationRunner"
+```
+
+#### Entry Point
+
+`org.example.spaceflight.app.Launcher` → delegates to `SpaceFlightApp` (JavaFX Application).
+
 
 ---
 
-## 12. Future Migration Path
+## 12. Future Outlook
 
 The codebase is deliberately structured so that moving from a single-process application to a client-server architecture requires **no changes to any view or business-logic class**.
+The only things that change are the concrete implementations behind the existing service interfaces.
 
-### What Changes
+#### What Changes
 
 | Current (Single-Process) | After HTTP Migration |
 |---|---|
-| `AppContext` creates `Default*` services | Server: same. Client: `ClientAppContext` with HTTP-backed implementations |
-| `DefaultSimulationService` fires JavaFX Timeline | Server: same. Clients subscribe to WebSocket/SSE |
-| Tick data passed in-memory as `SimulationSnapshot` | Server serializes to JSON; clients deserialize |
-| Alert/psych listener callbacks fire in-process | Server publishes via WebSocket; clients subscribe |
+| `AppContext` creates `Default*` service implementations directly | Server retains `AppContext`; client introduces a `ClientAppContext` that provides HTTP-backed service proxies |
+| `DefaultSimulationService` drives the tick loop via a JavaFX `Timeline` | Server continues to run the `Timeline` internally; clients receive tick updates through a WebSocket or SSE stream |
+| Tick data is passed in-memory as `SimulationSnapshot` | Server serializes `SimulationSnapshot` to JSON; clients deserialize and rebuild the snapshot locally |
+| Alert and psychological-support listener callbacks fire in-process | Server publishes state-change events via WebSocket; clients subscribe and invoke their local UI handlers |
 
+
+#### Why the current code is already prepared
+
+- **Service interfaces exist** for every backend concern. Views never import a
+  `Default*` class directly.
+- **`AppContext`** is the single place that knows concrete implementations.
+  Replacing it is a one-line change in `SpaceFlightApp`.
+- **`SimulationSnapshot`** is already an immutable, copyable data object.
+  Adding `@JsonProperty` annotations (or a Jackson `ObjectMapper`) is all that
+  is needed to serialise it.
+- **`PassengerDashboardView.update(SimulationSnapshot)`** and
+  **`StewardessInboxView.update(SimulationSnapshot)`** already accept the
+  snapshot type, not the raw `Passenger` object. Over HTTP, the server just
+  sends JSON, the client deserialises it into a `SimulationSnapshot`, and calls
+  the same method.
+- **Alert / psych listeners** (`setOnAlertRaised`, `setOnRequestRaised`) have
+  the right shape for a future WebSocket subscription (only the transport
+  underneath changes).
 
 ---
 
