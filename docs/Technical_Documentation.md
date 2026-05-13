@@ -365,7 +365,82 @@ sequenceDiagram
 
 ## 7. Simulation Engine
 
-Muss noch gemacht werden! Simulation Engine: Tick Loop, Flight Phases, Vital Signs Generation (inkl. Experience Mode Influence) und Simulated Values (Health Vitals & Shuttle Telemetry)...
+### 7.1 Simulation control
+
+`DefaultSimulationService` uses a JavaFX `Timeline` to drive the system.
+
+Supported actions:
+
+- `start`
+- `pause`
+- `resume`
+- `stop`
+- `setSpeed`
+
+Tick listeners are registered through `addTickListener`. `SpaceFlightApp` attaches the main listener that updates the entire application state.
+
+### 7.2 Runtime configuration
+
+`SimulationConfigView` collects the startup parameters.
+
+Current implementation details:
+
+- `Emergency Passengers` is user-configurable via spinner
+- `Current Time` is display-only
+- departure time is set to `LocalTime.now()` when Start is pressed
+- arrival time is computed as departure plus 10 minutes
+- default tick interval is `500 ms`
+
+### 7.3 Flight profile
+
+`DefaultFlightSimulationService` divides a standard flight into:
+
+- `ASCENT`: 180 ticks
+- `ORBIT`: 840 ticks
+- `DESCENT`: 180 ticks
+
+At the default `500 ms` tick interval, the complete run contains `1200` ticks and lasts `10` minutes of wall-clock time.
+
+Tracked telemetry includes:
+
+- fuel percentage
+- distance traveled
+- altitude
+- velocity
+- oxygen level
+- cabin temperature
+- route progress
+- flight phase
+- elapsed time
+- total planned time
+
+### 7.4 Emergency landing
+
+Emergency landing can be triggered from the Base Station Overview.
+
+Implementation behavior:
+
+- descent starts immediately from the current altitude
+- emergency descent duration is proportional to current altitude, with a minimum floor
+- route progress is frozen during emergency descent and the map uses separate emergency progress for visualization
+- once ground is reached, `onEmergencyLanded` is fired and `SimulationService.stop()` is invoked
+
+### 7.5 Vital sign generation
+
+`DefaultVitalSignsGenerator` generates vitals based on:
+
+- a per-passenger baseline (`PersonalProfile`)
+- a slow-moving trend state
+- flight phase
+- experience mode
+- optional emergency activation
+
+Key design choices:
+
+- drift is smooth rather than purely random
+- tick interval scaling keeps behavior stable across speed changes
+- physiological hard limits clamp extreme values
+- emergency passengers are scheduled to deteriorate at a random point between 20% and 70% of the flight
 
 ---
 
