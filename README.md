@@ -26,7 +26,7 @@ SpaceFlight is a JavaFX prototype created in the university module "Ausgewählte
   - [Mockups](docs/MockUps)
   - [Personas](docs/Personas)
   - [Technical Documentation](docs/Technical_Documentation.md)
-  - [User Guide](docs/USER_GUIDE.md)
+  - [User Guide](docs/User_Documentation.md)
 
 ---
 

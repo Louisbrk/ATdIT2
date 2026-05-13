@@ -280,7 +280,7 @@ The passenger dashboard shows:
 
 The passenger dashboard does **not** show fuel or distance.
 
-![Passenger dashboard in Relax mode](Pictures/user-guide/14-passenger-dashboard-relax.png)
+![Passenger dashboard in Relax mode](Pictures/user-guide/14-passenger-dashboard-relax.jpeg)
 
 The status area is a running message list. It can contain:
 
@@ -309,14 +309,14 @@ The full dashboard screenshot above shows the Relax mode layout.
 - neutral visual styling
 - psychological help button is hidden
 
-![Passenger dashboard in Normal mode](Pictures/user-guide/15-passenger-dashboard-normal.png)
+![Passenger dashboard in Normal mode](Pictures/user-guide/15-passenger-dashboard-normal.jpeg)
 
 #### Action
 
 - darker visual styling
 - psychological help button is hidden
 
-![Passenger dashboard in Action mode](Pictures/user-guide/16-passenger-dashboard-action.png)
+![Passenger dashboard in Action mode](Pictures/user-guide/16-passenger-dashboard-action.jpeg)
 
 ### 4.3 Alert button
 
@@ -372,7 +372,7 @@ Language switching updates the labels that currently have translations in the pa
 
 Selecting **Anne Bright** in the Simulation Control window opens the stewardess dashboard.
 
-![Stewardess dashboard](Pictures/user-guide/20-stewardess-dashboard.png)
+![Stewardess dashboard](Pictures/user-guide/20-stewardess-dashboard.jpeg)
 
 The stewardess dashboard has:
 
@@ -446,7 +446,7 @@ The same layout is used for both medical alerts and psychological support incide
 5. The stewardess receives a notification in the sidebar.
 6. The simulation stops automatically after landing.
 
-![Emergency landing confirmation dialog](Pictures/user-guide/24-emergency-landing-confirm.png)
+![Emergency landing confirmation dialog](Pictures/user-guide/24-emergency-landing-confirm.jpeg)
 
 ![Emergency landing active](Pictures/user-guide/25-emergency-landing-active.png)
 
