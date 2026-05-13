@@ -572,7 +572,7 @@ public enum Gender {
 #### 5.3.1 `IPassengerRegistry`
 **Purpose**: Interface for accessing the passenger manifest and crew.
 
-```java
+    ```java
 public interface IPassengerRegistry {
     Stewardess getStewardess();
     List<Passenger> getPassengers();
@@ -1139,7 +1139,328 @@ The sequence diagram above shows the complete lifecycle of a passenger-triggered
 
 ## 10. UI Layer
 
-UI: Dashboard Overview, Navigation, Theme System, AI Health Dashboard Layout und alle View-Komponenten...
+The `ui` package contains the complete JavaFX presentation layer. All views are
+created programmatically; the project does not use FXML files. The UI layer is
+responsible for rendering simulation state, wiring user interactions to service
+interfaces and keeping dashboard state synchronized with simulation ticks and
+alert callbacks.
+
+### 10.1 Package Overview
+
+| Package | Responsibility |
+|---|---|
+| `ui.simulation` | Start screen, simulation configuration, start/pause/resume/stop controls and dashboard launcher |
+| `ui.shared` | Reusable UI infrastructure such as the main tab container, navigation bar, color constants and route map canvas |
+| `ui.basestation` | Base Station crew dashboard, flight information panel, passenger cards, detail view and incident handling pages |
+| `ui.aihealth` | AI health monitor with status columns, vital trend charts and manual health overrides |
+| `ui.passenger` | Passenger-facing dashboard, stewardess dashboard, settings dialog and presenter-backed interaction logic |
+| `ui.passenger.theme` | Theme strategy implementations for passenger experience modes |
+
+The UI layer depends on model objects and service interfaces (`SimulationService`,
+`AlertService`, `PsychologicalSupportService`, `ExperienceModeService`,
+`IHealthEvaluationOrchestrator`). It does not instantiate concrete service
+implementations directly; this remains the responsibility of `AppContext` and
+`SpaceFlightApp`.
+
+### 10.2 Dashboard Entry Flow
+
+The runtime entry point for users is `SimulationConfigView`. It collects the
+number of emergency passengers, starts the simulation and exposes a person
+selector for opening individual dashboards.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant SimUI as SimulationConfigView
+    participant Sim as SimulationService
+    participant App as SpaceFlightApp
+    participant Main as MainWindow
+    participant PV as PassengerDashboardView
+    participant SV as StewardessInboxView
+
+    User->>SimUI: choose emergency passenger count
+    User->>SimUI: Start
+    SimUI->>Sim: start(SimulationConfig)
+    SimUI->>App: onSimulationStarted(config)
+    App->>Main: create/register Base Station views
+    User->>SimUI: Open Passenger View
+    SimUI->>App: selected Passenger
+    alt selected person is Stewardess
+        App->>SV: open stewardess dashboard
+    else selected person is Passenger
+        App->>PV: open passenger dashboard
+    end
+```
+
+`SimulationConfigView` also controls simulation speed. The speed buttons are
+disabled until the simulation is running and call `SimulationService.setSpeed(...)`
+with factors `1`, `2`, `3` or `5`.
+
+Opening a person dashboard is independent from the Base Station tab navigation.
+`SpaceFlightApp.openPassengerDashboard(...)` opens a separate `Stage` for each
+selected passenger. Passenger dashboards are tracked in `passengerDashboards` and
+removed when their window closes. The stewardess dashboard is stored as the
+single active `stewardessView`; closing the window clears that reference.
+
+### 10.3 Shared UI Infrastructure
+
+| Class | Role |
+|---|---|
+| `MainWindow` | Root `BorderPane` for the Base Station window. It owns the `NavigationBar`, registers views per tab and swaps the active center node. If no view is registered, it renders a "Coming soon" placeholder. |
+| `NavigationBar` | Horizontal tab bar with five fixed tabs: `Overview`, `AI Health`, `Emergency Alert`, `Psychological Support`, `User / Settings`. Each tab emits a `NavigationBar.Tab` callback. |
+| `RouteMapCanvas` | Canvas-based route visualization reused by Base Station, passenger and stewardess dashboards. It renders regular route progress and emergency-landing progress. |
+| `UIColors` | Centralized color constants for health and UI status colors. |
+
+Navigation is intentionally simple: tab selection does not recreate views. The
+already constructed view node is retrieved from `MainWindow.views` and placed in
+the center of the root layout. This keeps incident cards, chart history and other
+view-local state alive while users switch tabs.
+
+#### 10.3.1 Route map rendering
+
+`RouteMapCanvas` draws a reusable Canvas scene instead of using static images for
+the shuttle route. It loads `earth.jpg` from the application resources, renders a
+black space background, deterministic star positions, a dashed waypoint route and
+a shuttle marker interpolated along the route.
+
+Emergency landing rendering is stateful. When emergency landing first becomes
+active, the canvas latches the current shuttle position and calculates the
+nearest point on the Earth surface. Later updates draw a red Bezier re-entry path
+from that latched position to the target point. Once emergency progress reaches
+`1.0`, the canvas keeps the shuttle fixed at the landing point.
+
+### 10.4 Base Station Views
+
+The Base Station is the operator-facing dashboard. `BaseStationView` composes
+`FlightInfoPanel` and `PassengerOverviewPanel` and connects passenger cards to
+alert and psychological-support listener callbacks.
+
+| Class | Type | Responsibility |
+|---|---|---|
+| `BaseStationView` | Composite view | Main overview layout. Updates flight telemetry, passenger status indicators and opens `PassengerDetailView` through `MainWindow.setCenter(...)`. |
+| `FlightInfoPanel` | Component | Displays route map, planned/elapsed/remaining time, fuel, distance, phase, altitude, velocity and the emergency-landing action. |
+| `PassengerOverviewPanel` | Component | Two-column grid containing one `PassengerCardView` per registered person. |
+| `PassengerCardView` | Component | Compact person card with name, role, health indicator, alert/psych visual state and an `Info` action. |
+| `PassengerDetailView` | Detail view | Shows person metadata, vital signs, experience mode and alert history. |
+| `EmergencyAlertView` | Incident page | Displays active medical alerts and removes cards when alerts are resolved. |
+| `AlertIncidentCard` | Incident component | Contains alert reason, note field, `Send to Stewardess` and `Solved` actions. |
+| `PsychologicalSupportView` | Incident page | Displays psychological support requests sorted by severity (`HIGH`, `MEDIUM`, `LOW`). |
+| `PsychIncidentCard` | Incident component | Contains request message, severity, note field, `Send to Stewardess` and `Solved` actions. |
+
+#### 10.4.1 Overview update behavior
+
+`BaseStationView.updateFlightInfo(...)` delegates telemetry rendering to
+`FlightInfoPanel.update(...)`. `BaseStationView.updatePassengerCards(...)`
+updates the health indicator of each passenger card from the current passenger
+list.
+
+Medical alert and psychological support states are event-driven:
+
+- `AlertService.setOnAlertRaised(...)` marks the corresponding passenger card as
+  alert-active.
+- `AlertService.setOnAlertResolved(...)` clears the alert-active state.
+- `PsychologicalSupportService.setOnRequestRaised(...)` marks the corresponding
+  passenger card as psych-active.
+- `PsychologicalSupportService.setOnRequestResolved(...)` clears the psych state
+  only if no unresolved medical alert remains for that passenger.
+
+All listener-triggered UI mutations are wrapped in `Platform.runLater(...)` so
+that JavaFX nodes are updated on the JavaFX Application Thread.
+
+#### 10.4.2 Detail view behavior
+
+Clicking `Info` on a `PassengerCardView` creates a `PassengerDetailView` and
+replaces the main center node with that detail view. Returning to the overview
+sets the center node back to `BaseStationView.root`. The detail view is refreshed
+through `BaseStationView.updateDetailView()` while it is active.
+
+#### 10.4.3 Incident forwarding
+
+`EmergencyAlertView` and `PsychologicalSupportView` do not directly know the
+stewardess dashboard. Instead, both expose a `setOnSendToStewardess(...)`
+callback. `SpaceFlightApp` wires this callback and delivers the incident to
+`StewardessInboxView` if a stewardess dashboard is currently open.
+
+The card-level send actions require crew notes. Resolving an incident calls the
+corresponding service (`AlertService.resolveAlert(...)` or
+`PsychologicalSupportService.resolveRequest(...)`), which then notifies all
+registered listeners.
+
+The alert and psychological-support services maintain listener lists, so
+`BaseStationView`, `EmergencyAlertView`, `PsychologicalSupportView` and
+`StewardessInboxView` can subscribe to the same incident lifecycle without
+overwriting each other.
+
+### 10.5 AI Health Dashboard Layout
+
+`AiHealthDashboardView` presents live health classification results in three
+status columns:
+
+1. `CRITICAL` for `HealthStatus.RED`
+2. `WARNING` for `HealthStatus.YELLOW`
+3. `STABLE` for `HealthStatus.GREEN`
+
+The dashboard owns one `AiHealthPassengerCard` per passenger and keeps capped
+history buffers for each vital sign. The history length is limited to 60 values
+per vital type.
+
+| Class | Responsibility |
+|---|---|
+| `AiHealthDashboardView` | Maintains passenger cards, vital histories, health-status ordering and column rendering. Calls the health orchestrator once per update tick. |
+| `AiHealthPassengerCard` | Displays one passenger's name, experience mode, overall status badge, four vital value labels, four mini charts and manual override buttons. |
+| `VitalSignsChartCanvas` | Canvas line chart for a single vital history. It colors the chart based on the per-vital health status. |
+
+Update flow:
+
+```mermaid
+sequenceDiagram
+    participant App as SpaceFlightApp
+    participant View as AiHealthDashboardView
+    participant Orch as IHealthEvaluationOrchestrator
+    participant Card as AiHealthPassengerCard
+
+    App->>View: update(passengers, phase)
+    View->>View: append capped vital histories
+    View->>Orch: evaluate(passengers, phase)
+    View->>Orch: getLatestResult(passenger)
+    View->>Card: update(vitals, result, override, histories)
+    View->>View: sort RED/YELLOW/GREEN and render columns
+```
+
+Manual override is implemented at card level through a callback into
+`AiHealthDashboardView`. Pressing `G`, `Y` or `R` sets
+`Passenger.healthStatus`, enables `Passenger.manualOverride` and refreshes the
+columns immediately. The health orchestrator later skips passengers with manual
+override enabled.
+
+### 10.6 Passenger Dashboard and MVP Split
+
+The passenger dashboard uses a partial MVP structure:
+
+| Class | Responsibility |
+|---|---|
+| `PassengerDashboardView` | Builds JavaFX layout, owns controls, opens dialogs and forwards user actions to the presenter. |
+| `PassengerDashboardPresenter` | Owns domain-facing logic: mode changes, alert creation, psych-support creation, theme application, language updates and telemetry formatting. |
+| `PassengerSettingsDialog` | Non-blocking settings dialog for volume mock value, brightness/opacity and language selection. |
+| `DashboardSkin` | Data holder containing references to all style-affected dashboard nodes. |
+
+`PassengerDashboardView.update(SimulationSnapshot)` consumes the
+serialization-ready snapshot boundary. It updates the shared route map and
+delegates shuttle-state formatting to the presenter. This is the same boundary
+that makes the passenger UI suitable for a future client/server split.
+
+The presenter caches the latest raw telemetry values. This allows language and
+experience-mode changes to immediately re-render label prefixes and telemetry
+wording even when no new simulation tick has arrived yet.
+
+Passenger actions:
+
+- `Alert` calls `PassengerDashboardPresenter.onAlertClicked()`, which raises a
+  medical alert through `AlertService`.
+- Experience-mode radio buttons call `onModeSelected(...)`, which delegates to
+  `ExperienceModeService`, reapplies the theme and updates psych-help
+  visibility.
+- `Psychological Help` is only visible in `RELAXED` mode. The dialog maps
+  `Calm`, `Tense` and `Panic` to `LOW`, `MEDIUM` and `HIGH` severity and sends
+  the request through `PsychologicalSupportService`.
+- The settings gear opens `PassengerSettingsDialog`; language changes trigger
+  `presenter.applyLanguage()`.
+
+### 10.7 Passenger Theme System
+
+The theme system is implemented with a small strategy pattern.
+
+| Class | Role |
+|---|---|
+| `PassengerDashboardTheme` | Interface for applying a visual theme to a dashboard skin. |
+| `ThemeFactory` | Maps `ExperienceMode` to a concrete theme. |
+| `RelaxedTheme` | Soft, calm styling for `RELAXED` mode. |
+| `NormalTheme` | Neutral styling for `NORMAL` mode. |
+| `ActionTheme` | Darker, higher-contrast styling for `ACTION` mode. |
+| `DashboardSkin` | Bundle of UI node references that a theme is allowed to style. |
+
+`PassengerDashboardPresenter.applyTheme()` gets the current
+`Passenger.experienceMode`, asks `ThemeFactory.forMode(mode)` for a theme and
+applies it to the dashboard skin. The presenter also changes the root background
+through a separate callback because the root `BorderPane` is not part of
+`DashboardSkin`.
+
+This keeps mode-specific styling outside of `PassengerDashboardView`, while the
+view remains responsible for layout construction.
+
+### 10.8 Stewardess Dashboard
+
+`StewardessInboxView` is the crew member's in-flight dashboard. It intentionally
+separates general notifications from actionable incident cards.
+
+| Area | Purpose |
+|---|---|
+| Route and flight status | Shows route progress, phase, elapsed/remaining time and altitude. |
+| Telemetry bar | Shows oxygen level, altitude, velocity and cabin temperature. |
+| Active Incidents | Contains full incident cards that were explicitly forwarded from the Base Station. |
+| Notifications | Contains general events such as passenger alerts and emergency-landing messages. |
+
+Forwarded incidents are received through:
+
+- `receiveIncident(AlertIncident, String)` for medical alerts
+- `receivePsychIncident(PsychologicalIncident, String)` for psychological
+  support requests
+
+Both methods create a `StewardessIncidentCard`. Solving a card resolves the
+underlying service incident and removes the card from the dashboard. Each card
+also displays the crew note sent by the Base Station and the passenger vital
+signs available at the time the card is created.
+
+The stewardess can also trigger a manual alert through the sidebar alert button.
+This creates an `AlertIncident` with reason `Manual alert by stewardess`.
+Passenger alerts that are not explicitly forwarded still appear in the
+stewardess notification list while the stewardess dashboard is open, but they do
+not create actionable incident cards.
+
+### 10.9 Simulation Control View
+
+`SimulationConfigView` is part of the UI layer although it is shown before the
+Base Station window. It creates a `SimulationConfig` with:
+
+- configured emergency passenger count
+- departure time set to the current local time
+- arrival time set to departure plus ten minutes
+
+It calls `SimulationService.start(config)`, `pause()`, `resume()`, `stop()` and
+`setSpeed(...)` directly through the `SimulationService` interface. It also owns
+the passenger selector that delegates dashboard creation back to the application
+through `setOnOpenPassengerView(...)`.
+
+### 10.10 Threading and State Synchronization
+
+The UI receives state through two mechanisms:
+
+1. Tick-based updates from the simulation loop.
+2. Event callbacks from alert and psychological support services.
+
+Views that mutate JavaFX nodes from callbacks use `Platform.runLater(...)`.
+Passenger and stewardess dashboards consume `SimulationSnapshot`, while Base
+Station views still use live `Passenger` and `ShuttleState` objects. This split
+is intentional: the client-facing dashboards already use the future network
+boundary, while the local Base Station still benefits from direct object access
+for detailed status and history views.
+
+The simulation tick listener in `SpaceFlightApp` updates flight state first,
+generates new vital signs for each registered person and then builds one
+`SimulationSnapshot`. Inside `Platform.runLater(...)`, the Base Station, AI
+Health view, stewardess dashboard and all open passenger dashboards are refreshed
+from that same tick state.
+
+### 10.11 Current UI Limitations
+
+- `User / Settings` in the Base Station navigation is currently a placeholder.
+- Passenger volume is stored in the settings dialog but has no audio backend.
+- Passenger language switching only covers labels that have explicit
+  translations in `PassengerDashboardPresenter` and the dialog code.
+- AI Health manual overrides cannot be cleared through the UI once enabled.
+- Forwarded incidents are not queued if the stewardess dashboard is closed at
+  send time.
+- Most styling is inline JavaFX CSS, not external stylesheet-based styling.
 
 ---
 
