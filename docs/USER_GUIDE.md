@@ -191,7 +191,8 @@ Manual override behavior:
 - pressing `G`, `Y`, or `R` sets the health status immediately
 - the card shows an override badge
 - automatic evaluation skips that person while manual override is active
-- there is currently **no clear override button** in the UI
+- there is currently no functionality to end the override (therefore it stays active till the end of the flight)
+
 
 ### 3.3 Emergency Alert
 
@@ -391,7 +392,7 @@ The stewardess dashboard has:
 This distinction matters:
 
 - **Notifications** show general events, including emergency landing messages and passenger alerts
-- **Active Incidents** only show cards that were explicitly sent from the Base Station with **Send to Stewardess** The base station always need to write a message here to send the incident to the stewardess.
+- **Active Incidents** only show cards that were explicitly sent from the Base Station with **Send to Stewardess**. The base station always needs to write a message here to send the incident to the stewardess.
 
 ### 5.2 Incident cards
 
