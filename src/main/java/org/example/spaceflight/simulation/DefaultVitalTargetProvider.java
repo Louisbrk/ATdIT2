@@ -13,7 +13,7 @@ import java.util.logging.Logger;
  * Knows the physiological rules (e.g. ascent raises BPM by 20× a phase factor);
  * the generator handles the stochastic step mechanics.
  */
-public class     DefaultVitalTargetProvider implements IVitalTargetProvider {
+public class DefaultVitalTargetProvider implements IVitalTargetProvider {
 
     private static final Logger log = Logger.getLogger( MethodHandles.lookup( ).lookupClass( ).getName( ) );
 
