@@ -1,5 +1,7 @@
 # Technical Documentation — SpaceFlight
 
+> **Disclaimer:** The overall structure, functionality, architecture, and core design concepts of this project were independently planned and developed by the project team. The initial prototype and parts of the implementation were created with the assistance of AI-based development tools. Mermaid diagrams in this documentation were also generated with AI support. All generated code and documentation content was subsequently reviewed, adapted, tested, and refined manually to ensure functionality, stability, maintainability, and overall code quality.
+
 ## Table of Contents
 
 1. [Project Overview](#1-project-overview)
@@ -74,7 +76,7 @@ The software provides **AI-driven health monitoring and passenger prioritization
 |---|---|---------|
 | Language | Java | 25      |
 | UI Framework | JavaFX | 24      |
-| Build Tool | Maven | 4.0     |
+| Build Tool | Maven | 3.x     |
 | UI Construction | Programmatic (no FXML) | —       |
 | Styling | Inline JavaFX CSS + Theme classes | —       |
 
@@ -214,13 +216,12 @@ org.example.spaceflight
 │   ├── IVitalTargetProvider         Interface: phase/mode target computation
 │   ├── DefaultVitalTargetProvider   Applies phase × mode factors to baselines
 │   ├── PersonalProfile              Per-passenger vital baseline (package-private helper)
-│   └── PhaseTarget                  Target center & range for vital generation (package-private helper)
+│   ├── PhaseTarget                  Target center & range for vital generation (package-private helper)
+│   └── SimulationObserver           Headless tick observer (test/eval utility)
 │
 ├── health                           Health evaluation & classification
 │   ├── HealthEvaluationService      Interface: classify one passenger
-│   ├── KnnHealthEvaluationService   k-NN classifier (active, k=5)
-│   ├── WeightedZScoreEvaluationService Z-score classifier (alternative)
-│   ├── DefaultHealthEvaluationService Simple thresholds (legacy)
+│   ├── KnnHealthEvaluationService   k-NN classifier (sole active classifier, k=5)
 │   ├── IHealthEvaluationOrchestrator Interface: batch evaluation
 │   ├── HealthEvaluationOrchestrator Runs evaluation for all passengers each tick
 │   ├── HealthEvaluationResult       Immutable: overall + per-vital statuses
@@ -248,7 +249,8 @@ org.example.spaceflight
     │   ├── MainWindow               Root container with tab switching
     │   ├── NavigationBar            5-tab top navigation
     │   ├── UIColors                 Centralized color constants
-    │   └── RouteMapCanvas           Animated flight route visualization
+    │   ├── RouteMapCanvas           Animated flight route visualization
+    │   └── LogoView                 Reusable logo/banner rendering component
     ├── basestation/                 Crew dashboards
     │   ├── BaseStationView          Crew control panel orchestrator
     │   ├── FlightInfoPanel          Telemetry sidebar + emergency button
@@ -280,7 +282,7 @@ org.example.spaceflight
         └── SimulationConfigView     Pre-flight configuration & control
 ```
 
-**Total:** ~81 Java files across 8 packages.
+**Total:** ~80 Java files across 8 packages.
 
 ---
 
@@ -1668,8 +1670,8 @@ mvn package
 
 ## 12. Future Outlook
 
-The codebase is deliberately structured so that moving from a single-process application to a client-server architecture requires **no changes to any view or business-logic class**.
-The only things that change are the concrete implementations behind the existing service interfaces.
+The codebase is deliberately structured so that moving from a single-process application to a client-server architecture requires **minimal changes** to view or business-logic classes, primarily limited to adding serialization annotations and WebSocket/event-transport adapters.
+The main changes are the concrete implementations behind the existing service interfaces.
 
 #### What Changes
 
