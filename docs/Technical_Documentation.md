@@ -279,7 +279,320 @@ org.example.spaceflight
 
 ## 5. Domain Model
 
-Klasse Model ausfüllen!
+The `model` package contains the core domain classes for the space tourism simulation. It defines the central data objects, enumerations, and interfaces that represent the state of passengers, the shuttle, and the simulation.
+
+### 5.1 Core Class Diagram (Overview)
+
+```mermaid
+classDiagram
+    class Passenger {
+        -String name
+        -int age
+        -Gender gender
+        -String role
+        -ExperienceMode experienceMode
+        -VitalSigns vitalSigns
+        -HealthStatus healthStatus
+        -boolean manualOverride
+        +isCrewMember() boolean
+    }
+
+    class Stewardess {
+        +isCrewMember() boolean
+    }
+
+    class VitalSigns {
+        -int bpm
+        -double spO2
+        -int systolicBp
+        -int diastolicBp
+        -int respiratoryRate
+    }
+
+    class ShuttleState {
+        -double fuelPercent
+        -double distanceKm
+        -double altitudeKm
+        -double velocityKmph
+        -double oxygenPercent
+        -double cabinTemperature
+        -double routeProgress
+        -FlightPhase flightPhase
+        -boolean emergencyLanding
+        -double elapsedSeconds
+        -double totalFlightSeconds
+    }
+
+    class SimulationSnapshot {
+        -ShuttleState shuttleState
+        -List~PassengerSnapshot~ passengers
+        -double emergencyProgress
+        -long tickCount
+        +copyShuttleState() ShuttleState
+    }
+
+    class PassengerSnapshot {
+        -String id
+        -String name
+        -int age
+        -Gender gender
+        -boolean crewMember
+        -ExperienceMode experienceMode
+        -VitalSigns vitalSigns
+        -HealthStatus healthStatus
+        -boolean manualOverride
+    }
+
+    class SimulationConfig {
+        -int emergencyPassengerCount
+        -LocalTime departureTime
+        -LocalTime arrivalTime
+        -int tickIntervalMs
+    }
+
+    Stewardess --|> Passenger : extends
+    Passenger --> VitalSigns : has
+    Passenger --> ExperienceMode : uses
+    Passenger --> HealthStatus : classified as
+    Passenger --> Gender : has
+    SimulationSnapshot --> ShuttleState : contains
+    SimulationSnapshot --> "0..*" PassengerSnapshot : contains
+    PassengerSnapshot ..> Passenger : created from
+    ShuttleState --> FlightPhase : in
+```
+
+#### 5.1.1 `Passenger`
+**Purpose**: Central entity for space tourism passengers, containing personal data, health status, and experience mode.
+
+##### Attributes:
+- `String name` - Passenger's name
+- `int age` - Age
+- `Gender gender` - Gender
+- `String role` - Role/Profession
+- `ExperienceMode experienceMode` - Selected experience mode
+- `VitalSigns vitalSigns` - Current vital signs
+- `HealthStatus healthStatus` - Health status
+- `boolean manualOverride` - Manual override status
+
+##### Key Methods:
+```java
+// Constructor
+public Passenger(String name, int age, Gender gender, String role){}
+
+// Getters/Setters with logging
+public void setHealthStatus(HealthStatus healthStatus){}
+public void setManualOverride(boolean manualOverride){}
+
+// Type identification
+public boolean isCrewMember(){} // Default: false
+```
+
+##### Special Features:
+- Logging for state changes (HealthStatus, ManualOverride)
+- Equals/HashCode based on name
+- Default ExperienceMode: NORMAL
+- Default HealthStatus: GREEN
+
+#### 5.1.2 `Stewardess`
+**Purpose**: Crew member; inherits from `Passenger` with crew identification.
+
+```java
+public class Stewardess extends Passenger {
+    public Stewardess(String name, int age, Gender gender){}
+    
+    @Override
+    public boolean isCrewMember() { return true; }
+}
+```
+
+#### 5.1.3 `VitalSigns`
+**Purpose**: A snapshot of the five monitored vital signs at a specific point in time.
+
+##### Attributes:
+- `int bpm` - Heart rate (beats per minute)
+- `double spO2` - Oxygen saturation
+- `int systolicBp` - Systolic blood pressure
+- `int diastolicBp` - Diastolic blood pressure
+- `int respiratoryRate` - Respiratory rate
+
+```java
+public VitalSigns(int bpm, double spO2, int systolicBp, int diastolicBp, int respiratoryRate){}
+```
+→ No setters, as they are not needed: values are not modified here.
+
+#### 5.1.4 `ShuttleState`
+**Purpose**: A mutable snapshot of all shuttle telemetry values ​​for a single simulation tick.
+
+##### Telemetry Attributes:
+- `double fuelPercent` - Fuel level in percent (Default: 100.0)
+- `double distanceKm` - Distance traveled
+- `double altitudeKm` - Altitude
+- `double velocityKmph` - Velocity
+- `double oxygenPercent` - Oxygen level in percent (Default: 100.0)
+- `double cabinTemperature` - Cabin temperature (Default: 21.0°C)
+- `double routeProgress` - Route progress (0.0–1.0)
+- `FlightPhase flightPhase` - Current flight phase
+- `boolean emergencyLanding` - Emergency landing status
+- `double elapsedSeconds` - Elapsed time
+- `double totalFlightSeconds` - Total flight duration (Default: 3000s = 50min)
+
+#### 5.1.5 `SimulationSnapshot`
+**Purpose**: An immutable snapshot of the complete simulation state at a specific tick.
+
+**Design Principle**: The sole data boundary between the simulation and the UI. Each view receives such a snapshot rather than live references.
+
+##### Attributes:
+- `ShuttleState shuttleState` – Defensive copy of the shuttle state
+- `List<PassengerSnapshot> passengers` – List of all passenger snapshots
+- `double emergencyProgress` – Emergency progress
+- `long tickCount` – Tick counter
+
+##### Special Features:
+- `copyShuttleState()` creates a defensive copy of all `ShuttleState` values
+- Stream-based conversion of passengers into snapshots
+
+#### 5.1.6 `PassengerSnapshot`
+**Purpose**: An immutable data snapshot of a passenger at a specific simulation tick.
+
+**Design Principle**: Decoupling of views from live `Passenger` objects. Designed for JSON serialization within a future client-server architecture.
+
+##### Constructor:
+```java
+public PassengerSnapshot(Passenger p){} // Copies all relevant data
+```
+
+##### All getters are read-only (no setters).
+
+#### 5.1.7 `SimulationConfig`
+**Purpose**: User-defined settings for controlling the simulation.
+
+##### Configuration Parameters:
+- `int emergencyPassengerCount` - Number of emergency passengers (Default: 0)
+- `LocalTime departureTime` - Departure time (Default: 07:00)
+- `LocalTime arrivalTime` - Arrival time (Default: 07:10)
+- `int tickIntervalMs` - Tick interval in milliseconds (Default: 500ms)
+
+→ No setter for tickIntervalMs, as we do not have a UI for it at this time.
+
+### 5.2 Enums
+
+```mermaid
+classDiagram
+    class HealthStatus {
+        <<enumeration>>
+        GREEN
+        YELLOW
+        RED
+    }
+
+    class FlightPhase {
+        <<enumeration>>
+        PRE_FLIGHT
+        ASCENT
+        ORBIT
+        DESCENT
+        LANDED
+    }
+
+    class ExperienceMode {
+        <<enumeration>>
+        RELAXED
+        NORMAL
+        ACTION
+        +getPhaseFactor(FlightPhase) double
+    }
+
+    class Gender {
+        <<enumeration>>
+        MALE
+        FEMALE
+    }
+```
+
+#### 5.2.1 `HealthStatus`
+**Purpose**: Three-tier health classification.
+
+```java
+public enum HealthStatus {
+    GREEN,   // Normal
+    YELLOW,  // Warning
+    RED      // Critical
+}
+```
+
+#### 5.2.2 `FlightPhase`
+**Purpose**: Represents the five main phases of a spaceflight.
+
+```java
+public enum FlightPhase {
+    PRE_FLIGHT,  // Before launch
+    ASCENT,      // Ascent
+    ORBIT,       // In orbit
+    DESCENT,     // Descent
+    LANDED       // Landed
+}
+```
+
+#### 5.2.3 `ExperienceMode`
+**Purpose**: Defines three distinct experience modes that influence the extent to which physiological effects are amplified during various flight phases.
+
+```java
+public enum ExperienceMode {
+    RELAXED, NORMAL, ACTION
+}
+```
+
+**Modes and their Phase Factors**:
+
+| Flight Phase | RELAXED | NORMAL | ACTION |
+|------------|---------|--------|--------|
+| PRE_FLIGHT | 0.4     | 1.0    | 1.5    |
+| ASCENT     | 0.7     | 1.0    | 1.2    |
+| ORBIT      | 1.0     | 1.0    | 1.0    |
+| DESCENT    | 0.8     | 1.0    | 1.2    |
+| LANDED     | 1.2     | 1.0    | 0.7    |
+
+**Key Features**:
+- Abstract method `getPhaseFactor(FlightPhase phase)` for the Strategy pattern
+- RELAXED: A more relaxed experience with reduced physiological effects
+- ACTION: A more adventurous experience with amplified effects
+
+#### 5.2.4 `Gender`
+**Purpose**: Biological sex for selecting the correct demographic vital sign baselines.
+
+```java
+public enum Gender {
+    MALE,
+    FEMALE
+}
+```
+
+### 5.3 Registry/Container
+
+#### 5.3.1 `IPassengerRegistry`
+**Purpose**: Interface for accessing the passenger manifest and crew.
+
+```java
+public interface IPassengerRegistry {
+    Stewardess getStewardess();
+    List<Passenger> getPassengers();
+    List<Passenger> getAllPersons(); // Crew + Passengers
+}
+```
+
+### 5.3.2 `PassengerRegistry`
+**Purpose**: Concrete implementation featuring a fixed passenger manifest for the demo flight. (hardcoded)
+
+#### Fixed Demo Passengers:
+1. **Jennifer Monroe** (35, CEO) - RELAXED Mode
+2. **Ben Cooper** (51, Engineer) - NORMAL Mode
+3. **Peter Mayer** (15, Student) - RELAXED Mode
+4. **Sarah Chen** (42, Scientist) - ACTION Mode
+5. **Marcus Webb** (29, Journalist) - NORMAL Mode
+6. **Lisa Berger** (38, Researcher) - ACTION Mode
+
+#### Crew:
+- **Anne Bright** (27, Stewardess)
 
 ---
 
