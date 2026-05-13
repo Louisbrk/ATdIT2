@@ -460,22 +460,21 @@ The AI Health subsystem classifies each passenger into `GREEN`, `YELLOW`, or `RE
 
 ### 8.2 Class inventory (health package)
 
-| Class / Interface | Type | Purpose | Currently used |
-|---|---|---|---|
-| `HealthEvaluationService` | Interface | Contract to classify one passenger | Yes |
-| `KnnHealthEvaluationService` | Class | Active kNN-based classifier with safety logic | Yes |
-| `WeightedZScoreEvaluationService` | Class | Alternative weighted z-score classifier | No (not wired) |
-| `IHealthEvaluationOrchestrator` | Interface | Batch evaluation + result lookup contract | Yes |
-| `HealthEvaluationOrchestrator` | Class | Runs evaluation for all passengers and caches latest result | Yes |
-| `HealthEvaluationResult` | Class | Immutable result DTO (overall + per-vital map) | Yes |
-| `VitalType` | Enum | Vital dimensions (`BPM`, `SPO2`, `SYSTOLIC_BP`, `DIASTOLIC_BP`, `RESP_RATE`) | Yes |
-| `IVitalProfileProvider` | Interface | Baseline lookup abstraction by demographics + mode | Yes |
-| `VitalProfileTable` | Class | In-memory baseline table for all demographic segments | Yes |
-| `VitalProfile` | Class | One baseline profile entry (mean, stdDev, weight) | Yes |
-| `ITrainingDataLoader` | Interface | Training data source abstraction | Yes |
-| `CsvTrainingDataLoader` | Class | Loads training cases from `/training_data.csv` | Yes |
-| `TrainingCase` | Class (package-private) | Parsed/normalized labeled case for kNN | Yes (internal) |
-| `AgeGroup` | Enum (package-private) | Age bucket mapping (`YOUNG`, `MIDDLE`, `SENIOR`) | Yes (internal) |
+| Class / Interface | Type | Purpose
+|---|---|---|
+| `HealthEvaluationService` | Interface | Contract to classify one passenger
+| `KnnHealthEvaluationService` | Class | Active kNN-based classifier with safety logic
+| `IHealthEvaluationOrchestrator` | Interface | Batch evaluation + result lookup contract
+| `HealthEvaluationOrchestrator` | Class | Runs evaluation for all passengers and caches latest result
+| `HealthEvaluationResult` | Class | Immutable result DTO (overall + per-vital map)
+| `VitalType` | Enum | Vital dimensions (`BPM`, `SPO2`, `SYSTOLIC_BP`, `DIASTOLIC_BP`, `RESP_RATE`)
+| `IVitalProfileProvider` | Interface | Baseline lookup abstraction by demographics + mode
+| `VitalProfileTable` | Class | In-memory baseline table for all demographic segments
+| `VitalProfile` | Class | One baseline profile entry (mean, stdDev, weight)
+| `ITrainingDataLoader` | Interface | Training data source abstraction
+| `CsvTrainingDataLoader` | Class | Loads training cases from `/training_data.csv`
+| `TrainingCase` | Class (package-private) | Parsed/normalized labeled case for kNN
+| `AgeGroup` | Enum (package-private) | Age bucket mapping (`YOUNG`, `MIDDLE`, `SENIOR`)
 
 ### 8.3 Data model and training data
 
@@ -600,33 +599,9 @@ sequenceDiagram
     Orch-->>UI: getLatestResult(passenger)
 ```
 
-### 8.8 Alternative classifier (`WeightedZScoreEvaluationService`)
 
-This class is implemented but currently **not wired** in `SpaceFlightApp`.
 
-Characteristics:
-- computes per-vital z-scores against `VitalProfileTable`
-- computes weighted composite score
-- applies hard floor so worst per-vital status dominates overall
-
-Important current state:
-- supports same `HealthEvaluationService` interface
-- can be swapped in without changing dashboard code
-- `FlightPhase` parameter exists but is not currently used in this implementation
-
-### 8.9 Client/server readiness and currently unused seams
-
-Already prepared for future distribution:
-- interface boundaries (`HealthEvaluationService`, `ITrainingDataLoader`, `IVitalProfileProvider`, `IHealthEvaluationOrchestrator`)
-- immutable result object (`HealthEvaluationResult`)
-- clear orchestrator boundary between UI and classifier
-
-Currently local-only / not used remotely:
-- no HTTP/gRPC-based health service implementation yet
-- no remote training-data provider yet (CSV loader is local resource only)
-- no active runtime use of `WeightedZScoreEvaluationService`
-
-### 8.10 Behavioral notes and limitations
+### 8.8 Behavioral notes and limitations
 
 - If training data is unavailable, classifier returns `allGreen()` defaults.
 - `TrainingCase` and `AgeGroup` are package-private by design (internal health implementation details).

@@ -24,6 +24,7 @@ import org.example.spaceflight.model.Passenger;
 import org.example.spaceflight.model.SimulationSnapshot;
 import org.example.spaceflight.simulation.ExperienceModeService;
 import org.example.spaceflight.ui.passenger.theme.DashboardSkin;
+import org.example.spaceflight.ui.shared.LogoView;
 import org.example.spaceflight.ui.shared.RouteMapCanvas;
 
 import java.time.LocalTime;
@@ -169,7 +170,10 @@ public class PassengerDashboardView {
         VBox modeBox = new VBox(6, modeTitle, relaxRadio, normalRadio, actionRadio);
         modeBox.setPadding(new Insets(8));
 
-        VBox sidebar = new VBox(15, infoBox, alertButton, psychButton, modeBox);
+        Region sidebarSpacer = new Region();
+        VBox.setVgrow(sidebarSpacer, Priority.ALWAYS);
+        VBox sidebar = new VBox(15, infoBox, alertButton, psychButton, modeBox,
+                sidebarSpacer, LogoView.medium());
         sidebar.setPadding(new Insets(15));
         sidebar.setAlignment(Pos.TOP_CENTER);
         sidebar.setPrefWidth(200);
