@@ -46,7 +46,7 @@ The health status of each passenger is determined at every simulation tick by a 
 
 #### Step 1 — Feature normalisation
 
-All five vital features are normalised to **[0, 1]** using the min/max values derived from the training set:
+All five vital featres are normalised to **[0, 1]** using the min/max values derived from the training set:
 
 ```
 normalised = (value - min) / (max - min)
