@@ -96,9 +96,11 @@ public class DefaultSimulationService implements SimulationService {
         log.info("Simulation stopped after " + tickCount + " ticks");
     }
 
+    /** See {@link SimulationService#isRunning()} — unused by the desktop UI today. */
     @Override
     public boolean isRunning() { return running; }
 
+    /** See {@link SimulationService#isPaused()} — unused by the desktop UI today. */
     @Override
     public boolean isPaused() { return paused; }
 

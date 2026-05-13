@@ -15,10 +15,12 @@ import javafx.util.Duration;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.example.spaceflight.model.Passenger;
 import org.example.spaceflight.model.SimulationConfig;
 import org.example.spaceflight.simulation.SimulationService;
+import org.example.spaceflight.ui.shared.LogoView;
 
 import java.lang.invoke.MethodHandles;
 import java.time.LocalTime;
@@ -118,7 +120,11 @@ public class SimulationConfigView {
         Label title = new Label("Simulation Configuration");
         title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
 
-        root.getChildren().addAll(title, configGrid, new Separator(), buttonBar, speedBar, statusLabel);
+        StackPane heroLogo = LogoView.hero();
+        StackPane.setAlignment(heroLogo, Pos.CENTER);
+
+        root.getChildren().addAll(heroLogo, title, configGrid, new Separator(), buttonBar,
+                speedBar, statusLabel);
     }
 
     public void setPassengers(List<Passenger> passengers) {

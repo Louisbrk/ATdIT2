@@ -84,10 +84,9 @@ public class AiHealthDashboardView {
                 "-fx-font-size: 22px; -fx-font-weight: bold; " +
                 "-fx-text-fill: #212121; -fx-padding: 12 16 2 16;"
         );
-        Label subHeader = new Label("Live classification · 4 vital trends · Manual override");
-        subHeader.setStyle("-fx-font-size: 11px; -fx-text-fill: #607D8B; -fx-padding: 0 16 10 16;");
 
-        VBox content = new VBox(0, header, subHeader, columnRow);
+
+        VBox content = new VBox(0, header, columnRow);
         content.setStyle("-fx-background-color: white;");
         VBox.setVgrow(columnRow, Priority.ALWAYS);
 
