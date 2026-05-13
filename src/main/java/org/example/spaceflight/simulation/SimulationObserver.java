@@ -16,6 +16,11 @@ import java.util.logging.Logger;
  * Records per-passenger health status on each tick and prints a statistical
  * evaluation report at the end of the simulation run.
  * Purely observational — no side effects on simulation state.
+ *
+ * <p>Used only by {@link HeadlessSimulationRunner}, not by the JavaFX application.
+ * When a split client–server design was still intended, this kind of batch reporter
+ * paired naturally with a headless simulation side; after that requirement was dropped,
+ * only the GUI-driven simulation remains in normal use.</p>
  */
 public class SimulationObserver {
 
@@ -43,7 +48,11 @@ public class SimulationObserver {
         }
     }
 
-    /** Compute and print the full evaluation report to stdout and the logger. */
+    /**
+     * Compute and print the full evaluation report to stdout and the logger.
+     * Currently unused — callers use {@link #printReport(List)} so emergency passengers
+     * can be labelled in the output.
+     */
     public void printReport() {
         printReport(List.of());
     }

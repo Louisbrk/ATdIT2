@@ -15,8 +15,10 @@ public interface SimulationService {
 
     void setSpeed(double multiplier);
 
+    /** Not referenced by the current UI; kept for programmatic status queries (would suit a remote client polling the engine). */
     boolean isRunning();
 
+    /** Not referenced by the current UI; kept for programmatic status queries (would suit a remote client polling the engine). */
     boolean isPaused();
 
     void addTickListener(TickListener listener);
