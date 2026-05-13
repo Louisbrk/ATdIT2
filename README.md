@@ -21,7 +21,6 @@ bpm, spo2, systolic, diastolic, respRate, ageGroup, gender, mode, label
 
 | Column | Type | Values |
 |--------|------|--------|
-| `bpm` | int | Heart rate in beats per minute |
 | `spo2` | double | Blood oxygen saturation in % |
 | `systolic` | int | Systolic blood pressure in mmHg |
 | `diastolic` | int | Diastolic blood pressure in mmHg |
