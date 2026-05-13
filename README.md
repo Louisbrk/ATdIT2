@@ -22,7 +22,7 @@ SpaceFlight is a JavaFX prototype created in the university module "Ausgewählte
 - [Project Structure](#project-structure)
 - [License](#license)
 - Documentation
-  - [Sales Pitch (Wiki)](https://github.com/Louisbrk/ATdIT2/wiki)
+  - [Sales Pitch (Wiki)](https://github.com/Louisbrk/ATdIT2/wiki/Start‐up-Marketing-Pitch)
   - [BPMN Diagrams](docs/BPMN) (or see Signavio Folder)
   - [Mockups](docs/MockUps)
   - [Personas](docs/Personas)
