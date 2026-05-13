@@ -1,0 +1,33 @@
+@startuml
+title Emergency Landing Flow
+
+actor Operator
+participant BaseStationView
+participant SpaceFlightApp
+participant FlightSimulationService
+participant DefaultFlightSimulationService
+participant StewardessInboxView
+participant PassengerDashboardView
+participant SimulationService
+
+Operator -> BaseStationView : trigger Emergency Landing
+BaseStationView -> SpaceFlightApp : onEmergencyLanding callback
+SpaceFlightApp -> FlightSimulationService : emergencyLanding()
+FlightSimulationService -> DefaultFlightSimulationService : emergencyLanding()
+DefaultFlightSimulationService -> DefaultFlightSimulationService : set emergencyActive\nstore start altitude/progress\nset emergency flag
+
+SpaceFlightApp -> StewardessInboxView : receiveEmergencyNotification(msg)
+loop for each open passenger dashboard
+  SpaceFlightApp -> PassengerDashboardView : addStatusMessage(msg)
+end
+
+loop later ticks
+  SpaceFlightApp -> FlightSimulationService : update(tickCount)
+  FlightSimulationService -> DefaultFlightSimulationService : updateEmergencyDescent()
+  DefaultFlightSimulationService --> SpaceFlightApp : emergency progress updated
+end
+
+DefaultFlightSimulationService -> SpaceFlightApp : onEmergencyLanded.run()
+SpaceFlightApp -> SimulationService : stop()
+
+@enduml

@@ -1,0 +1,32 @@
+@startuml
+title Manual Passenger Alert and Stewardess Routing
+
+actor PassengerUser
+participant PassengerDashboardView
+participant PassengerDashboardPresenter
+participant AlertService
+participant DefaultAlertService
+participant BaseStationView
+participant EmergencyAlertView
+participant StewardessInboxView
+
+PassengerUser -> PassengerDashboardView : click Alert
+PassengerDashboardView -> PassengerDashboardPresenter : onAlertClicked()
+PassengerDashboardPresenter -> AlertService : raiseAlert(passenger, reason)
+AlertService -> DefaultAlertService : raiseAlert(...)
+DefaultAlertService -> DefaultAlertService : create AlertIncident\nstore incident
+
+par notify base-station cards
+  DefaultAlertService -> BaseStationView : onAlertRaised(incident)
+  BaseStationView -> BaseStationView : mark passenger card alert active
+else add alert screen card
+  DefaultAlertService -> EmergencyAlertView : onAlertRaised(incident)
+  EmergencyAlertView -> EmergencyAlertView : addCard(incident)
+end
+
+opt operator chooses "Send to Stewardess"
+  EmergencyAlertView -> StewardessInboxView : receiveIncident(incident, message)
+  StewardessInboxView -> StewardessInboxView : add incident card to inbox
+end
+
+@enduml
