@@ -19,15 +19,16 @@ The classifier is trained on **144 labelled cases** covering all demographic seg
 bpm, spo2, systolic, diastolic, respRate, ageGroup, gender, mode, label
 ```
 
-| Column | Type | Values |
-|--------|------|--------|
-| `spo2` | double | Blood oxygen saturation in % |
-| `systolic` | int | Systolic blood pressure in mmHg |
-| `diastolic` | int | Diastolic blood pressure in mmHg |
-| `respRate` | int | Respiratory rate in breaths per minute |
+| Column | Type | Values                                          |
+|--------|------|-------------------------------------------------|
+| `bpm` | int | Heart rate in beats per minute                  |
+| `spo2` | double | Blood oxygen saturation in %                    |
+| `systolic` | int | Systolic blood pressure in mmHg                 |
+| `diastolic` | int | Diastolic blood pressure in mmHg                |
+| `respRate` | int | Respiratory rate in breaths per minute          |
 | `ageGroup` | enum | `YOUNG` (< 30), `MIDDLE` (30–50), `SENIOR` (> 50) |
-| `gender` | enum | `MALE`, `FEMALE` |
-| `mode` | enum | `RELAXED`, `NORMAL`, `ACTION` |
+| `gender` | enum | `MALE`, `FEMALE`                                |
+| `mode` | enum | `RELAXED`, `NORMAL`, `ACTION`                   |
 | `label` | enum | `GREEN` (healthy), `YELLOW` (warning), `RED` (critical) |
 
 The dataset covers all **18 demographic segments** (3 age groups × 2 genders × 3 experience modes), each with representative GREEN, YELLOW and RED cases. Comments starting with `#` are ignored by the parser.
