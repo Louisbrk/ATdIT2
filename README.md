@@ -1,6 +1,6 @@
 # SpaceFlight
 
-![SpaceFlight Banner](src/main/resources/org/example/spaceflight/images/earth.jpg)
+<img src="src/main/resources/org/example/spaceflight/images/LUMEIA.png" alt="SpaceFlight Banner" width="800">
 
 Crewed Spaceflight Assistance System — JavaFX 24 / Java 25
 
