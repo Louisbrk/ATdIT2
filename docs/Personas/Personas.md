@@ -1,0 +1,7 @@
+![1.png](personaspictures/1.png)
+![2.png](personaspictures/2.png)
+![3.png](personaspictures/3.png)
+![4.png](personaspictures/4.png)
+![5.png](personaspictures/5.png)
+![6.png](personaspictures/6.png)
+![7.png](personaspictures/7.png)
