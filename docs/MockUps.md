@@ -1,7 +1,0 @@
-![mup.png](Pictures/mockups/mup.png)
-![mupa.png](Pictures/mockups/mupa.png)
-![mub.png](Pictures/mockups/mub.png)
-![mubi.png](Pictures/mockups/mubi.png)
-![mubaih.png](Pictures/mockups/mubaih.png)
-![muba.png](Pictures/mockups/muba.png)
-![mubpa.png](Pictures/mockups/mubpa.png)
