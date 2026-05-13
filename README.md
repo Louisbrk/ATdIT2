@@ -11,17 +11,22 @@ Crewed Spaceflight Assistance System — JavaFX 24 / Java 25
 ![License](https://img.shields.io/badge/license-educational%20only-lightgrey)
 
 
-SpaceFlight is a JavaFX prototype created in the university module "Ausgewählte Themen der IT (ATdIT)". It simulates the space‑flight phase of a space‑tourism mission and supports ground crew and passengers with AI‑driven health monitoring, prioritization and alert workflows. The Goal of the Application is to assure a Happy and Safe Customer experience. 
+SpaceFlight is a JavaFX prototype created in the university module "Ausgewählte Themen der IT (ATdIT)". It simulates the space‑flight phase of a space‑tourism mission and supports ground crew and passengers with AI‑driven health monitoring, prioritization and alert workflows. The goal of the application is to ensure a happy and safe customer experience.
 
 ---
 
 ## Table of Contents
 
-- [BPMN diagramme](docs/BPMN)
-- [MockUps](docs/MockUps)
-- [Technical Documentation](docs/Technical_Documentation.md)
-- [User Documentation](docs/USER_GUIDE.md)
+- [About the Project](#about-the-project)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
 - [License](#license)
+- Documentation
+  - [BPMN Diagrams](docs/BPMN)
+  - [Mockups](docs/MockUps)
+  - [Personas](docs/Personas)
+  - [Technical Documentation](docs/Technical_Documentation.md)
+  - [User Guide](docs/USER_GUIDE.md)
 
 ---
 
