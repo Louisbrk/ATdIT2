@@ -579,7 +579,7 @@ public enum Gender {
 #### 5.3.1 `IPassengerRegistry`
 **Purpose**: Interface for accessing the passenger manifest and crew.
 
-    ```java
+```java
 public interface IPassengerRegistry {
     Stewardess getStewardess();
     List<Passenger> getPassengers();
