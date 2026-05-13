@@ -1,5 +1,7 @@
 # Technical Documentation — SpaceFlight
 
+> **Disclaimer:** The overall structure, functionality, architecture, and core design concepts of this project were independently planned and developed by the project team. The initial prototype and parts of the implementation were created with the assistance of AI-based development tools. Mermaid diagrams in this documentation were also generated with AI support. All generated code and documentation content was subsequently reviewed, adapted, tested, and refined manually to ensure functionality, stability, maintainability, and overall code quality.
+
 ## Table of Contents
 
 1. [Project Overview](#1-project-overview)
@@ -27,6 +29,7 @@
    - 9.5 [Alert Flow](#95-alert-flow)
 10. [UI Layer](#10-ui-layer) _(Package: ui)_
 11. [Build and Run](#11-build-and-run) _(Package: app)_
+12. [Future Outlook](#12-future-outlook)
 - [Appendix A: Logging](#appendix-a-logging)
 - [Appendix B: Behavioral Guarantees and Limitations](#appendix-b-behavioral-guarantees-and-limitations)
 
@@ -73,7 +76,7 @@ The software provides **AI-driven health monitoring and passenger prioritization
 |---|---|---------|
 | Language | Java | 25      |
 | UI Framework | JavaFX | 24      |
-| Build Tool | Maven | 4.0     |
+| Build Tool | Maven | 3.x     |
 | UI Construction | Programmatic (no FXML) | —       |
 | Styling | Inline JavaFX CSS + Theme classes | —       |
 
@@ -208,13 +211,12 @@ org.example.spaceflight
 │   ├── IVitalTargetProvider         Interface: phase/mode target computation
 │   ├── DefaultVitalTargetProvider   Applies phase × mode factors to baselines
 │   ├── PersonalProfile              Per-passenger vital baseline (package-private helper)
-│   └── PhaseTarget                  Target center & range for vital generation (package-private helper)
+│   ├── PhaseTarget                  Target center & range for vital generation (package-private helper)
+│   └── SimulationObserver           Headless tick observer (test/eval utility)
 │
 ├── health                           Health evaluation & classification
 │   ├── HealthEvaluationService      Interface: classify one passenger
-│   ├── KnnHealthEvaluationService   k-NN classifier (active, k=5)
-│   ├── WeightedZScoreEvaluationService Z-score classifier (alternative)
-│   ├── DefaultHealthEvaluationService Simple thresholds (legacy)
+│   ├── KnnHealthEvaluationService   k-NN classifier (sole active classifier, k=5)
 │   ├── IHealthEvaluationOrchestrator Interface: batch evaluation
 │   ├── HealthEvaluationOrchestrator Runs evaluation for all passengers each tick
 │   ├── HealthEvaluationResult       Immutable: overall + per-vital statuses
@@ -242,7 +244,8 @@ org.example.spaceflight
     │   ├── MainWindow               Root container with tab switching
     │   ├── NavigationBar            5-tab top navigation
     │   ├── UIColors                 Centralized color constants
-    │   └── RouteMapCanvas           Animated flight route visualization
+    │   ├── RouteMapCanvas           Animated flight route visualization
+    │   └── LogoView                 Reusable logo/banner rendering component
     ├── basestation/                 Crew dashboards
     │   ├── BaseStationView          Crew control panel orchestrator
     │   ├── FlightInfoPanel          Telemetry sidebar + emergency button
@@ -274,7 +277,7 @@ org.example.spaceflight
         └── SimulationConfigView     Pre-flight configuration & control
 ```
 
-**Total:** ~81 Java files across 8 packages.
+**Total:** ~80 Java files across 8 packages.
 
 ---
 
@@ -1672,6 +1675,41 @@ mvn package
 
 `org.example.spaceflight.app.Launcher` → delegates to `SpaceFlightApp` (JavaFX Application).
 
+
+---
+
+## 12. Future Outlook
+
+The codebase is deliberately structured so that moving from a single-process application to a client-server architecture requires **no changes to any view or business-logic class**.
+The only things that change are the concrete implementations behind the existing service interfaces.
+
+#### What Changes
+
+| Current (Single-Process) | After HTTP Migration |
+|---|---|
+| `AppContext` creates `Default*` service implementations directly | Server retains `AppContext`; client introduces a `ClientAppContext` that provides HTTP-backed service proxies |
+| `DefaultSimulationService` drives the tick loop via a JavaFX `Timeline` | Server continues to run the `Timeline` internally; clients receive tick updates through a WebSocket or SSE stream |
+| Tick data is passed in-memory as `SimulationSnapshot` | Server serializes `SimulationSnapshot` to JSON; clients deserialize and rebuild the snapshot locally |
+| Alert and psychological-support listener callbacks fire in-process | Server publishes state-change events via WebSocket; clients subscribe and invoke their local UI handlers |
+
+
+#### Why the current code is already prepared
+
+- **Service interfaces exist** for every backend concern. Views never import a
+  `Default*` class directly.
+- **`AppContext`** is the single place that knows concrete implementations.
+  Replacing it is a one-line change in `SpaceFlightApp`.
+- **`SimulationSnapshot`** is already an immutable, copyable data object.
+  Adding `@JsonProperty` annotations (or a Jackson `ObjectMapper`) is all that
+  is needed to serialise it.
+- **`PassengerDashboardView.update(SimulationSnapshot)`** and
+  **`StewardessInboxView.update(SimulationSnapshot)`** already accept the
+  snapshot type, not the raw `Passenger` object. Over HTTP, the server just
+  sends JSON, the client deserialises it into a `SimulationSnapshot`, and calls
+  the same method.
+- **Alert / psych listeners** (`setOnAlertRaised`, `setOnRequestRaised`) have
+  the right shape for a future WebSocket subscription (only the transport
+  underneath changes).
 
 ---
 
