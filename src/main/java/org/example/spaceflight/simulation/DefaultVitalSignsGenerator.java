@@ -49,6 +49,12 @@ public class DefaultVitalSignsGenerator implements VitalSignsGenerator {
         this(new DefaultVitalTargetProvider());
     }
 
+    /**
+     * Allows injecting a custom {@link IVitalTargetProvider} (e.g. for tests or an alternate ruleset).
+     * Not used by {@link org.example.spaceflight.app.AppContext} or {@link HeadlessSimulationRunner},
+     * which always use the no-arg constructor and {@link DefaultVitalTargetProvider}; kept for the same
+     * flexibility we expected when simulation logic might live behind a separate service boundary.
+     */
     public DefaultVitalSignsGenerator(IVitalTargetProvider targetProvider) {
         this.targetProvider = targetProvider;
     }

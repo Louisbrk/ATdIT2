@@ -9,6 +9,15 @@
 5. [Domain Model](#5-domain-model) _(Package: model)_
 6. [Service Layer](#6-service-layer)
 7. [Simulation Engine](#7-simulation-engine) _(Package: simulation)_
+   - 7.1 [Overview](#71-overview)
+   - 7.2 [Class diagram](#72-class-diagram)
+   - 7.3 [Simulation control lifecycle](#73-simulation-control-lifecycle)
+   - 7.4 [Runtime contracts](#74-runtime-contracts)
+   - 7.5 [Main tick pipeline](#75-main-tick-pipeline)
+   - 7.6 [Emergency landing](#76-emergency-landing)
+   - 7.7 [Flight profile](#77-flight-profile)
+   - 7.8 [Vital generation](#78-vital-generation)
+   - 7.9 [Experience mode](#79-experience-mode)
 8. [AI Health Classification](#8-ai-health-classification) _(Package: health)_
 9. [Alert and Psychological Support System](#9-alert-and-psychological-support-system) _(Package: alert)_
    - 9.1 [Overview](#91-overview)
@@ -204,10 +213,8 @@ org.example.spaceflight
 │   ├── DefaultExperienceModeService Mode changes with logging
 │   ├── IVitalTargetProvider         Interface: phase/mode target computation
 │   ├── DefaultVitalTargetProvider   Applies phase × mode factors to baselines
-│   ├── PersonalProfile              Per-passenger vital baseline (from name hash)
-│   ├── PhaseTarget                  Target center & range for vital generation
-│   ├── SimulationObserver           Records tick data for statistical evaluation
-│   └── HeadlessSimulationRunner     Full flight without UI (tuning tool)
+│   ├── PersonalProfile              Per-passenger vital baseline (package-private helper)
+│   └── PhaseTarget                  Target center & range for vital generation (package-private helper)
 │
 ├── health                           Health evaluation & classification
 │   ├── HealthEvaluationService      Interface: classify one passenger
@@ -279,7 +286,320 @@ org.example.spaceflight
 
 ## 5. Domain Model
 
-Klasse Model ausfüllen!
+The `model` package contains the core domain classes for the space tourism simulation. It defines the central data objects, enumerations, and interfaces that represent the state of passengers, the shuttle, and the simulation.
+
+### 5.1 Core Class Diagram (Overview)
+
+```mermaid
+classDiagram
+    class Passenger {
+        -String name
+        -int age
+        -Gender gender
+        -String role
+        -ExperienceMode experienceMode
+        -VitalSigns vitalSigns
+        -HealthStatus healthStatus
+        -boolean manualOverride
+        +isCrewMember() boolean
+    }
+
+    class Stewardess {
+        +isCrewMember() boolean
+    }
+
+    class VitalSigns {
+        -int bpm
+        -double spO2
+        -int systolicBp
+        -int diastolicBp
+        -int respiratoryRate
+    }
+
+    class ShuttleState {
+        -double fuelPercent
+        -double distanceKm
+        -double altitudeKm
+        -double velocityKmph
+        -double oxygenPercent
+        -double cabinTemperature
+        -double routeProgress
+        -FlightPhase flightPhase
+        -boolean emergencyLanding
+        -double elapsedSeconds
+        -double totalFlightSeconds
+    }
+
+    class SimulationSnapshot {
+        -ShuttleState shuttleState
+        -List~PassengerSnapshot~ passengers
+        -double emergencyProgress
+        -long tickCount
+        +copyShuttleState() ShuttleState
+    }
+
+    class PassengerSnapshot {
+        -String id
+        -String name
+        -int age
+        -Gender gender
+        -boolean crewMember
+        -ExperienceMode experienceMode
+        -VitalSigns vitalSigns
+        -HealthStatus healthStatus
+        -boolean manualOverride
+    }
+
+    class SimulationConfig {
+        -int emergencyPassengerCount
+        -LocalTime departureTime
+        -LocalTime arrivalTime
+        -int tickIntervalMs
+    }
+
+    Stewardess --|> Passenger : extends
+    Passenger --> VitalSigns : has
+    Passenger --> ExperienceMode : uses
+    Passenger --> HealthStatus : classified as
+    Passenger --> Gender : has
+    SimulationSnapshot --> ShuttleState : contains
+    SimulationSnapshot --> "0..*" PassengerSnapshot : contains
+    PassengerSnapshot ..> Passenger : created from
+    ShuttleState --> FlightPhase : in
+```
+
+#### 5.1.1 `Passenger`
+**Purpose**: Central entity for space tourism passengers, containing personal data, health status, and experience mode.
+
+##### Attributes:
+- `String name` - Passenger's name
+- `int age` - Age
+- `Gender gender` - Gender
+- `String role` - Role/Profession
+- `ExperienceMode experienceMode` - Selected experience mode
+- `VitalSigns vitalSigns` - Current vital signs
+- `HealthStatus healthStatus` - Health status
+- `boolean manualOverride` - Manual override status
+
+##### Key Methods:
+```java
+// Constructor
+public Passenger(String name, int age, Gender gender, String role){}
+
+// Getters/Setters with logging
+public void setHealthStatus(HealthStatus healthStatus){}
+public void setManualOverride(boolean manualOverride){}
+
+// Type identification
+public boolean isCrewMember(){} // Default: false
+```
+
+##### Special Features:
+- Logging for state changes (HealthStatus, ManualOverride)
+- Equals/HashCode based on name
+- Default ExperienceMode: NORMAL
+- Default HealthStatus: GREEN
+
+#### 5.1.2 `Stewardess`
+**Purpose**: Crew member; inherits from `Passenger` with crew identification.
+
+```java
+public class Stewardess extends Passenger {
+    public Stewardess(String name, int age, Gender gender){}
+    
+    @Override
+    public boolean isCrewMember() { return true; }
+}
+```
+
+#### 5.1.3 `VitalSigns`
+**Purpose**: A snapshot of the five monitored vital signs at a specific point in time.
+
+##### Attributes:
+- `int bpm` - Heart rate (beats per minute)
+- `double spO2` - Oxygen saturation
+- `int systolicBp` - Systolic blood pressure
+- `int diastolicBp` - Diastolic blood pressure
+- `int respiratoryRate` - Respiratory rate
+
+```java
+public VitalSigns(int bpm, double spO2, int systolicBp, int diastolicBp, int respiratoryRate){}
+```
+→ No setters, as they are not needed: values are not modified here.
+
+#### 5.1.4 `ShuttleState`
+**Purpose**: A mutable snapshot of all shuttle telemetry values ​​for a single simulation tick.
+
+##### Telemetry Attributes:
+- `double fuelPercent` - Fuel level in percent (Default: 100.0)
+- `double distanceKm` - Distance traveled
+- `double altitudeKm` - Altitude
+- `double velocityKmph` - Velocity
+- `double oxygenPercent` - Oxygen level in percent (Default: 100.0)
+- `double cabinTemperature` - Cabin temperature (Default: 21.0°C)
+- `double routeProgress` - Route progress (0.0–1.0)
+- `FlightPhase flightPhase` - Current flight phase
+- `boolean emergencyLanding` - Emergency landing status
+- `double elapsedSeconds` - Elapsed time
+- `double totalFlightSeconds` - Total flight duration (Default: 3000s = 50min)
+
+#### 5.1.5 `SimulationSnapshot`
+**Purpose**: An immutable snapshot of the complete simulation state at a specific tick.
+
+**Design Principle**: The sole data boundary between the simulation and the UI. Each view receives such a snapshot rather than live references.
+
+##### Attributes:
+- `ShuttleState shuttleState` – Defensive copy of the shuttle state
+- `List<PassengerSnapshot> passengers` – List of all passenger snapshots
+- `double emergencyProgress` – Emergency progress
+- `long tickCount` – Tick counter
+
+##### Special Features:
+- `copyShuttleState()` creates a defensive copy of all `ShuttleState` values
+- Stream-based conversion of passengers into snapshots
+
+#### 5.1.6 `PassengerSnapshot`
+**Purpose**: An immutable data snapshot of a passenger at a specific simulation tick.
+
+**Design Principle**: Decoupling of views from live `Passenger` objects. Designed for JSON serialization within a future client-server architecture.
+
+##### Constructor:
+```java
+public PassengerSnapshot(Passenger p){} // Copies all relevant data
+```
+
+##### All getters are read-only (no setters).
+
+#### 5.1.7 `SimulationConfig`
+**Purpose**: User-defined settings for controlling the simulation.
+
+##### Configuration Parameters:
+- `int emergencyPassengerCount` - Number of emergency passengers (Default: 0)
+- `LocalTime departureTime` - Departure time (Default: 07:00)
+- `LocalTime arrivalTime` - Arrival time (Default: 07:10)
+- `int tickIntervalMs` - Tick interval in milliseconds (Default: 500ms)
+
+→ No setter for tickIntervalMs, as we do not have a UI for it at this time.
+
+### 5.2 Enums
+
+```mermaid
+classDiagram
+    class HealthStatus {
+        <<enumeration>>
+        GREEN
+        YELLOW
+        RED
+    }
+
+    class FlightPhase {
+        <<enumeration>>
+        PRE_FLIGHT
+        ASCENT
+        ORBIT
+        DESCENT
+        LANDED
+    }
+
+    class ExperienceMode {
+        <<enumeration>>
+        RELAXED
+        NORMAL
+        ACTION
+        +getPhaseFactor(FlightPhase) double
+    }
+
+    class Gender {
+        <<enumeration>>
+        MALE
+        FEMALE
+    }
+```
+
+#### 5.2.1 `HealthStatus`
+**Purpose**: Three-tier health classification.
+
+```java
+public enum HealthStatus {
+    GREEN,   // Normal
+    YELLOW,  // Warning
+    RED      // Critical
+}
+```
+
+#### 5.2.2 `FlightPhase`
+**Purpose**: Represents the five main phases of a spaceflight.
+
+```java
+public enum FlightPhase {
+    PRE_FLIGHT,  // Before launch
+    ASCENT,      // Ascent
+    ORBIT,       // In orbit
+    DESCENT,     // Descent
+    LANDED       // Landed
+}
+```
+
+#### 5.2.3 `ExperienceMode`
+**Purpose**: Defines three distinct experience modes that influence the extent to which physiological effects are amplified during various flight phases.
+
+```java
+public enum ExperienceMode {
+    RELAXED, NORMAL, ACTION
+}
+```
+
+**Modes and their Phase Factors**:
+
+| Flight Phase | RELAXED | NORMAL | ACTION |
+|------------|---------|--------|--------|
+| PRE_FLIGHT | 0.4     | 1.0    | 1.5    |
+| ASCENT     | 0.7     | 1.0    | 1.2    |
+| ORBIT      | 1.0     | 1.0    | 1.0    |
+| DESCENT    | 0.8     | 1.0    | 1.2    |
+| LANDED     | 1.2     | 1.0    | 0.7    |
+
+**Key Features**:
+- Abstract method `getPhaseFactor(FlightPhase phase)` for the Strategy pattern
+- RELAXED: A more relaxed experience with reduced physiological effects
+- ACTION: A more adventurous experience with amplified effects
+
+#### 5.2.4 `Gender`
+**Purpose**: Biological sex for selecting the correct demographic vital sign baselines.
+
+```java
+public enum Gender {
+    MALE,
+    FEMALE
+}
+```
+
+### 5.3 Registry/Container
+
+#### 5.3.1 `IPassengerRegistry`
+**Purpose**: Interface for accessing the passenger manifest and crew.
+
+```java
+public interface IPassengerRegistry {
+    Stewardess getStewardess();
+    List<Passenger> getPassengers();
+    List<Passenger> getAllPersons(); // Crew + Passengers
+}
+```
+
+### 5.3.2 `PassengerRegistry`
+**Purpose**: Concrete implementation featuring a fixed passenger manifest for the demo flight. (hardcoded)
+
+#### Fixed Demo Passengers:
+1. **Jennifer Monroe** (35, CEO) - RELAXED Mode
+2. **Ben Cooper** (51, Engineer) - NORMAL Mode
+3. **Peter Mayer** (15, Student) - RELAXED Mode
+4. **Sarah Chen** (42, Scientist) - ACTION Mode
+5. **Marcus Webb** (29, Journalist) - NORMAL Mode
+6. **Lisa Berger** (38, Researcher) - ACTION Mode
+
+#### Crew:
+- **Anne Bright** (27, Stewardess)
 
 ---
 
@@ -365,82 +685,271 @@ sequenceDiagram
 
 ## 7. Simulation Engine
 
-### 7.1 Simulation control
+Package: `org.example.spaceflight.simulation`
 
-`DefaultSimulationService` uses a JavaFX `Timeline` to drive the system.
+This chapter describes only the types and call paths used by the running JavaFX application (`Launcher` → `SpaceFlightApp` → `AppContext`). Optional command-line tooling exists in the source tree but is **not** covered here.
 
-Supported actions:
+### 7.1 Overview
 
-- `start`
-- `pause`
-- `resume`
-- `stop`
-- `setSpeed`
+The simulation subsystem drives **time progression**, **shuttle telemetry**, **per-passenger vital signs**, and **experience mode changes**:
 
-Tick listeners are registered through `addTickListener`. `SpaceFlightApp` attaches the main listener that updates the entire application state.
+| Concern | Interface | Default implementation | Primary consumer |
+|---|---|---|---|
+| Tick loop (wall-clock) | `SimulationService` | `DefaultSimulationService` | `SimulationConfigView`, `SpaceFlightApp` |
+| Shuttle flight physics / phases | `FlightSimulationService` | `DefaultFlightSimulationService` | `SpaceFlightApp` |
+| Vital trajectories | `VitalSignsGenerator` | `DefaultVitalSignsGenerator` | `SpaceFlightApp` |
+| Passenger mode switches | `ExperienceModeService` | `DefaultExperienceModeService` | Passenger dashboard (via `AppContext`) |
+| Vital targets from phase × mode | `IVitalTargetProvider` | `DefaultVitalTargetProvider` | Used internally by `DefaultVitalSignsGenerator` |
 
-### 7.2 Runtime configuration
+`AppContext` constructs each default implementation once and exposes it through the interface type. `SpaceFlightApp` registers **one** tick listener that advances flight state, regenerates vitals for every passenger, builds a `SimulationSnapshot`, and pushes UI updates on the JavaFX thread.
 
-`SimulationConfigView` collects the startup parameters.
+### 7.2 Class diagram
 
-Current implementation details:
+```mermaid
+classDiagram
+    direction TB
 
-- `Emergency Passengers` is user-configurable via spinner
-- `Current Time` is display-only
-- departure time is set to `LocalTime.now()` when Start is pressed
-- arrival time is computed as departure plus 10 minutes
-- default tick interval is `500 ms`
+    namespace simulation {
+        class SimulationService {
+            <<interface>>
+            +start(SimulationConfig)
+            +pause()
+            +resume()
+            +stop()
+            +setSpeed(double)
+            +addTickListener(TickListener)
+        }
 
-### 7.3 Flight profile
+        class DefaultSimulationService {
+        }
 
-`DefaultFlightSimulationService` divides a standard flight into:
+        class FlightSimulationService {
+            <<interface>>
+            +update(long tickCount)
+            +emergencyLanding()
+            +isEmergencyLanding()
+            +getCurrentState()
+            +setOnEmergencyLanded(Runnable)
+            +getEmergencyProgress()
+        }
 
-- `ASCENT`: 180 ticks
-- `ORBIT`: 840 ticks
-- `DESCENT`: 180 ticks
+        class DefaultFlightSimulationService {
+        }
 
-At the default `500 ms` tick interval, the complete run contains `1200` ticks and lasts `10` minutes of wall-clock time.
+        class VitalSignsGenerator {
+            <<interface>>
+            +generateNext(Passenger, FlightPhase)
+            +configure(int tickIntervalMs)
+            +markAsEmergency(String name, long totalTicks)
+        }
 
-Tracked telemetry includes:
+        class DefaultVitalSignsGenerator {
+        }
 
-- fuel percentage
-- distance traveled
-- altitude
-- velocity
-- oxygen level
-- cabin temperature
-- route progress
-- flight phase
-- elapsed time
-- total planned time
+        class ExperienceModeService {
+            <<interface>>
+            +changeMode(Passenger, ExperienceMode)
+        }
 
-### 7.4 Emergency landing
+        class DefaultExperienceModeService {
+        }
 
-Emergency landing can be triggered from the Base Station Overview.
+        class IVitalTargetProvider {
+            <<interface>>
+            +buildTarget(...)
+        }
 
-Implementation behavior:
+        class DefaultVitalTargetProvider {
+        }
 
-- descent starts immediately from the current altitude
-- emergency descent duration is proportional to current altitude, with a minimum floor
-- route progress is frozen during emergency descent and the map uses separate emergency progress for visualization
-- once ground is reached, `onEmergencyLanded` is fired and `SimulationService.stop()` is invoked
+        class PersonalProfile {
+            <<package-private>>
+        }
 
-### 7.5 Vital sign generation
+        class PhaseTarget {
+            <<package-private>>
+        }
+    }
 
-`DefaultVitalSignsGenerator` generates vitals based on:
+    namespace model {
+        class SimulationConfig
+        class Passenger
+        class ShuttleState
+        class FlightPhase
+        class ExperienceMode
+        class VitalSigns
+    }
 
-- a per-passenger baseline (`PersonalProfile`)
-- a slow-moving trend state
-- flight phase
-- experience mode
-- optional emergency activation
+    namespace app {
+        class AppContext
+        class SpaceFlightApp
+    }
 
-Key design choices:
+    namespace ui_simulation {
+        class SimulationConfigView
+    }
 
-- drift is smooth rather than purely random
-- tick interval scaling keeps behavior stable across speed changes
-- physiological hard limits clamp extreme values
-- emergency passengers are scheduled to deteriorate at a random point between 20% and 70% of the flight
+    DefaultSimulationService ..|> SimulationService
+    DefaultFlightSimulationService ..|> FlightSimulationService
+    DefaultVitalSignsGenerator ..|> VitalSignsGenerator
+    DefaultExperienceModeService ..|> ExperienceModeService
+    DefaultVitalTargetProvider ..|> IVitalTargetProvider
+
+    DefaultVitalSignsGenerator --> IVitalTargetProvider : uses
+    DefaultVitalSignsGenerator ..> PersonalProfile : maintains
+    DefaultVitalSignsGenerator ..> PhaseTarget : receives from provider
+    DefaultVitalTargetProvider ..> PersonalProfile : reads baselines
+    DefaultVitalTargetProvider ..> PhaseTarget : builds
+
+    DefaultFlightSimulationService --> ShuttleState : owns
+
+    AppContext ..> SimulationService : creates default
+    AppContext ..> FlightSimulationService : creates default
+    AppContext ..> VitalSignsGenerator : creates default
+    AppContext ..> ExperienceModeService : creates default
+
+    SimulationConfigView --> SimulationService : controls
+    SpaceFlightApp --> SimulationService : tick orchestration
+    SpaceFlightApp --> FlightSimulationService : flight + emergency
+    SpaceFlightApp --> VitalSignsGenerator : vitals per tick
+    SpaceFlightApp ..> SimulationConfig : reads interval / emergencies
+
+    VitalSignsGenerator ..> Passenger : reads / writes vitals
+    VitalSignsGenerator ..> FlightPhase : input
+    ExperienceModeService ..> Passenger : updates mode
+```
+
+**Dependency rules**
+
+- **simulation → model:** services read/write `Passenger`, `ShuttleState`, `SimulationConfig`, enums, and `VitalSigns`. The model package does not depend on simulation.
+- **app → simulation:** `AppContext` is the only composition root that instantiates `Default*` simulation classes; the rest of the app depends on interfaces.
+- **ui.simulation → simulation:** `SimulationConfigView` depends only on `SimulationService` for start/pause/resume/stop/speed.
+
+### 7.3 Simulation control lifecycle
+
+The operator uses `SimulationConfigView` to start and steer the JavaFX `Timeline` inside `DefaultSimulationService`.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Running : start(config)
+    Running --> Paused : pause()
+    Paused --> Running : resume()
+    Running --> Idle : stop()
+    Paused --> Idle : stop()
+```
+
+While **Running**, the operator can press **1× / 2× / 3× / 5×** speed buttons; these call `setSpeed(multiplier)`, which rebuilds the `Timeline` with a shorter key-frame interval (minimum 50 ms). Button enable/disable state is tracked locally in the view; it does **not** poll `SimulationService` accessor methods.
+
+### 7.4 Runtime contracts
+
+**Pre-flight configuration (`SimulationConfigView`)**
+
+When **Start** is pressed, a `SimulationConfig` is built with:
+
+- `emergencyPassengerCount` from the spinner (how many passengers receive a delayed vital emergency),
+- `departureTime = LocalTime.now()`,
+- `arrivalTime = departure + 10 minutes`,
+- tick interval taken from `SimulationConfig` defaults (`500 ms` unless changed in code).
+
+The main dashboard window opens from the start callback; the simulation timer may already be running depending on user flow.
+
+**Tick listener (`SpaceFlightApp.openDashboard`)**
+
+Before the first tick:
+
+1. `VitalSignsGenerator.configure(tickIntervalMs)` — scales generator steps to the configured interval.
+2. `markAsEmergency(...)` is called for the configured number of passengers (random tick between 20% and 70% of total ticks).
+3. `FlightSimulationService.setOnEmergencyLanded(...)` registers stopping the tick loop when an emergency descent completes.
+
+**Each tick (same listener)**
+
+1. `FlightSimulationService.update(tickCount)` advances `ShuttleState` (phase, altitude, fuel, etc.).
+2. For each passenger: `VitalSignsGenerator.generateNext(passenger, phase)` updates `Passenger.vitalSigns`.
+3. A `SimulationSnapshot` is built for client-facing views; `Platform.runLater` updates base station, AI health, stewardess, and passenger windows.
+
+### 7.5 Main tick pipeline
+
+```mermaid
+sequenceDiagram
+    participant SCV as SimulationConfigView
+    participant Sim as SimulationService
+    participant App as SpaceFlightApp
+    participant Flight as FlightSimulationService
+    participant Vital as VitalSignsGenerator
+    participant P as Passenger list
+
+    SCV->>Sim: start(SimulationConfig)
+    Note over App: openDashboard(config) wires listener
+
+    loop each tick
+        Sim->>App: TickListener.onTick(tickCount)
+        App->>Flight: update(tickCount)
+        loop each passenger
+            App->>Vital: generateNext(passenger, phase)
+            Vital->>P: setVitalSigns(...)
+        end
+        App->>App: build SimulationSnapshot
+        App->>App: Platform.runLater(UI updates)
+    end
+```
+
+Health classification for the AI dashboard uses the **health** package and is orchestrated separately inside `AiHealthDashboardView`; it is not part of the simulation package but consumes the same passenger vitals written in this pipeline.
+
+### 7.6 Emergency landing
+
+```mermaid
+sequenceDiagram
+    participant BSV as BaseStationView / FlightInfoPanel
+    participant App as SpaceFlightApp
+    participant Flight as FlightSimulationService
+    participant Sim as SimulationService
+
+    BSV->>App: onEmergencyLanding callback
+    App->>Flight: emergencyLanding()
+    Note over Flight: enters emergency descent<br/>freezes route progress<br/>separate emergency progress 0..1
+
+    loop ticks until landed
+        Sim->>App: onTick
+        App->>Flight: update(tick)
+    end
+
+    Flight->>App: onEmergencyLanded runnable
+    App->>Sim: stop()
+```
+
+Behavior summary:
+
+- Triggered only from the base station UI (wired in `SpaceFlightApp`).
+- `DefaultFlightSimulationService` switches to an internal emergency descent path; **route progress** on `ShuttleState` stays fixed while **`getEmergencyProgress()`** drives map/UI animation.
+- When descent completes, the registered `Runnable` runs and stops the `SimulationService` timeline.
+
+### 7.7 Flight profile
+
+`DefaultFlightSimulationService` uses the following standard (non-emergency) timeline:
+
+| Segment | Ticks | Role |
+|---|---:|---|
+| Ascent | 180 | Climb to orbit |
+| Orbit | 840 | Cruise |
+| Descent | 180 | Return |
+
+Default timing uses **1200** ticks at **500 ms** → **10 minutes** real time. Telemetry updated each tick includes altitude, velocity, fuel, oxygen, cabin temperature, distance, route progress, flight phase, and elapsed seconds.
+
+### 7.8 Vital generation
+
+`DefaultVitalSignsGenerator` assigns each passenger:
+
+- a **stable personal baseline** (`PersonalProfile`, derived once from passenger data),
+- **slow trends** so curves look physiological rather than noisy,
+- **targets** from `DefaultVitalTargetProvider` combining `FlightPhase`, `ExperienceMode`, and optional emergency override,
+- **hard clamps** on medically plausible ranges.
+
+Emergency passengers (configured before launch) deteriorate toward critical targets after a **random activation tick** between 20% and 70% of the computed total flight ticks.
+
+### 7.9 Experience mode
+
+Passenger dashboards call `DefaultExperienceModeService` via `ExperienceModeService.changeMode(passenger, newMode)` when the user selects another mode. The service updates the `Passenger` domain object and logs the change; vital targets on subsequent ticks follow the new mode via `DefaultVitalTargetProvider`.
 
 ---
 

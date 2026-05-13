@@ -35,6 +35,6 @@ public enum ExperienceMode {
         }
     };
 
-    /** Returns how strongly this mode amplifies the phase's physiological effect. */
+    // Returns how strongly this mode changes the phase's physiological effect.
     public abstract double getPhaseFactor(FlightPhase phase);
 }

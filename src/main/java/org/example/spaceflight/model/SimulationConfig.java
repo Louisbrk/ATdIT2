@@ -2,13 +2,13 @@ package org.example.spaceflight.model;
 
 import java.time.LocalTime;
 
-/** Holds the user-defined settings that control how the simulation runs. */
+// Holds the user-defined settings that control how the simulation runs
 public class SimulationConfig {
 
     private int emergencyPassengerCount;
     private LocalTime departureTime;
     private LocalTime arrivalTime;
-    private int tickIntervalMs;
+    private final int tickIntervalMs;
 
     public SimulationConfig() {
         this.emergencyPassengerCount = 0;
@@ -27,5 +27,4 @@ public class SimulationConfig {
     public void setArrivalTime(LocalTime arrivalTime) { this.arrivalTime = arrivalTime; }
 
     public int getTickIntervalMs() { return tickIntervalMs; }
-    public void setTickIntervalMs(int tickIntervalMs) { this.tickIntervalMs = tickIntervalMs; }
 }
