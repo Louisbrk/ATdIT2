@@ -55,7 +55,7 @@ public class SpaceFlightApp extends Application {
         configView.setPassengers(registry.getAllPersons());
         configView.setOnOpenPassengerView(this::openPassengerDashboard);
 
-        Scene scene = new Scene(configView.getRoot(), 500, 450);
+        Scene scene = new Scene(configView.getRoot(), 500, 680);
         primaryStage.setTitle("SpaceFlight - Simulation Control");
         primaryStage.setScene(scene);
         primaryStage.show();

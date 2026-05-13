@@ -5,7 +5,7 @@ import javafx.application.Application;
 import java.lang.invoke.MethodHandles;
 import java.util.logging.Logger;
 
-/** Main entry point — separates the JavaFX Application class from the actual main method. */
+
 public class Launcher {
 
     private static final Logger log = Logger.getLogger( MethodHandles.lookup( ).lookupClass( ).getName( ) );
