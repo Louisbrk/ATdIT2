@@ -687,8 +687,6 @@ sequenceDiagram
 
 Package: `org.example.spaceflight.simulation`
 
-This chapter describes only the types and call paths used by the running JavaFX application (`Launcher` → `SpaceFlightApp` → `AppContext`). Optional command-line tooling exists in the source tree but is **not** covered here.
-
 ### 7.1 Overview
 
 The simulation subsystem drives **time progression**, **shuttle telemetry**, **per-passenger vital signs**, and **experience mode changes**:
