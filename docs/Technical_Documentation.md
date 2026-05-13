@@ -27,7 +27,6 @@
    - 9.5 [Alert Flow](#95-alert-flow)
 10. [UI Layer](#10-ui-layer) _(Package: ui)_
 11. [Build and Run](#11-build-and-run) _(Package: app)_
-12. [Future Outlook](#12-future-outlook)
 - [Appendix A: Logging](#appendix-a-logging)
 - [Appendix B: Behavioral Guarantees and Limitations](#appendix-b-behavioral-guarantees-and-limitations)
 
@@ -85,7 +84,7 @@ The software provides **AI-driven health monitoring and passenger prioritization
 
 ## 3. Architecture Overview
 
-The application follows a **layered single-process architecture** with clear interface boundaries so core services can later be replaced by remote (client/server) implementations.
+The application follows a **layered single-process architecture** with clear interface boundaries between presentation, services and the domain model.
 
 ### 3.1 Layered Architecture
 
@@ -134,6 +133,9 @@ flowchart TB
     C --> S6[IPassengerRegistry]
     C --> S7[ExperienceModeService]
 
+    A --> HE[HealthEvaluationOrchestrator]
+    HE --> HC[KnnHealthEvaluationService]
+
     A --> MW[MainWindow / Navigation]
     MW --> BS[BaseStationView]
     MW --> AI[AiHealthDashboardView]
@@ -143,6 +145,8 @@ flowchart TB
     A --> PV[PassengerDashboardView]
     A --> SV[StewardessInboxView]
 ```
+
+> **Note:** The health evaluation subsystem (`HealthEvaluationOrchestrator` + `KnnHealthEvaluationService`) is created directly in `SpaceFlightApp`, not via `AppContext`.
 
 ### 3.4 Runtime Data Flow (per simulation tick)
 
@@ -166,16 +170,6 @@ sequenceDiagram
     Note over UI: Passenger/Stewardess views use snapshot only
 ```
 
-### 3.5 Client/Server Readiness (already coded)
-
-- **Interface-first design** across services enables swapping local implementations for remote adapters.
-- **Snapshot boundary** already exists (`SimulationSnapshot`): client-facing views consume serializable snapshot data instead of direct object references.
-- **`AppContext` swap strategy**: migration to client/server mainly requires replacing local `Default*` services with HTTP/gRPC-backed implementations while keeping most view/controller code stable.
-
-### 3.6 Current Scope vs Future Split
-
-- **Current:** all modules run in one JVM process (JavaFX desktop app).
-- **Future-ready seams already present:** service interfaces, callback/event contracts, and snapshot-based data transport.
 --- 
 
 ## 4. Package Structure
@@ -231,7 +225,7 @@ org.example.spaceflight
 │   ├── AgeGroup                     Enum: YOUNG, MIDDLE, SENIOR
 │   ├── TrainingCase                 One labelled row from CSV
 │   ├── ITrainingDataLoader          Interface: load training data
-│   └── CsvTrainingDataLoader        Loads 144 cases from training_data.csv
+│   └── CsvTrainingDataLoader        Loads 140 cases from training_data.csv
 │
 ├── alert                            Alert & psychological support
 │   ├── AlertService                 Interface: alert incident management
@@ -443,6 +437,8 @@ public VitalSigns(int bpm, double spO2, int systolicBp, int diastolicBp, int res
 - `double elapsedSeconds` - Elapsed time
 - `double totalFlightSeconds` - Total flight duration (Default: 3000s = 50min)
 
+> **Note:** `DefaultFlightSimulationService` overrides this at startup with `600s` (10 min real time).
+
 #### 5.1.5 `SimulationSnapshot`
 **Purpose**: An immutable snapshot of the complete simulation state at a specific tick.
 
@@ -461,7 +457,7 @@ public VitalSigns(int bpm, double spO2, int systolicBp, int diastolicBp, int res
 #### 5.1.6 `PassengerSnapshot`
 **Purpose**: An immutable data snapshot of a passenger at a specific simulation tick.
 
-**Design Principle**: Decoupling of views from live `Passenger` objects. Designed for JSON serialization within a future client-server architecture.
+**Design Principle**: Decoupling of views from live `Passenger` objects.
 
 ##### Constructor:
 ```java
@@ -625,6 +621,8 @@ The Service Layer encapsulates all application use-cases behind interfaces and k
 | `IPassengerRegistry` | `PassengerRegistry` | Passenger lookup/list for runtime |
 | `ExperienceModeService` | `DefaultExperienceModeService` | Mode changes (`RELAXED`, `NORMAL`, `ACTION`) |
 
+> **Note:** The health evaluation subsystem (`HealthEvaluationOrchestrator`, `KnnHealthEvaluationService`) is instantiated directly in `SpaceFlightApp` rather than via `AppContext`, since it is consumed only by the AI Health dashboard view.
+
 ### 6.3 How `AppContext` works
 
 `AppContext` is the service registry and local composition container:
@@ -681,7 +679,6 @@ sequenceDiagram
 
 - **Separation of concerns:** UI remains presentation-focused.
 - **Testability:** interfaces allow mock/stub implementations.
-- **Replaceability:** migration path to client/server mostly requires replacing `AppContext` bindings with remote-backed services.
 
 ## 7. Simulation Engine
 
@@ -1097,13 +1094,26 @@ sequenceDiagram
     participant Cls as KnnHealthEvaluationService
     participant Prof as VitalProfileTable
     participant Data as CsvTrainingDataLoader
+    participant P as Passenger
 
-    Note over Data,Cls: Training cases loaded once during classifier construction
+    Note over Cls,Data: Startup (once) — classifier construction
+    Cls->>Data: load()
+    Data-->>Cls: List<TrainingCase>
+
+    Note over UI,P: Per simulation tick
     UI->>Orch: evaluate(passengers, phase)
-    Orch->>Cls: evaluate(vitals, passenger, phase)
-    Cls->>Prof: lookup(age, gender, mode)
-    Cls-->>Orch: HealthEvaluationResult
-    Orch-->>UI: getLatestResult(passenger)
+    loop for each passenger (skip if manualOverride or no vitals)
+        Orch->>Cls: evaluate(vitals, passenger, phase)
+        Cls->>Prof: lookup(age, gender, mode)
+        Prof-->>Cls: Map<VitalType, VitalProfile>
+        Cls-->>Orch: HealthEvaluationResult
+        Orch->>P: setHealthStatus(result.overall)
+    end
+    Orch-->>UI: void (results cached internally)
+
+    Note over UI,Orch: Later — UI pulls cached result per passenger
+    UI->>Orch: getLatestResult(passenger)
+    Orch-->>UI: HealthEvaluationResult
 ```
 
 
@@ -1513,10 +1523,9 @@ The passenger dashboard uses a partial MVP structure:
 | `PassengerSettingsDialog` | Non-blocking settings dialog for volume mock value, brightness/opacity and language selection. |
 | `DashboardSkin` | Data holder containing references to all style-affected dashboard nodes. |
 
-`PassengerDashboardView.update(SimulationSnapshot)` consumes the
-serialization-ready snapshot boundary. It updates the shared route map and
-delegates shuttle-state formatting to the presenter. This is the same boundary
-that makes the passenger UI suitable for a future client/server split.
+`PassengerDashboardView.update(SimulationSnapshot)` consumes the snapshot
+boundary. It updates the shared route map and delegates shuttle-state
+formatting to the presenter.
 
 The presenter caches the latest raw telemetry values. This allows language and
 experience-mode changes to immediately re-render label prefixes and telemetry
@@ -1663,41 +1672,6 @@ mvn package
 
 `org.example.spaceflight.app.Launcher` → delegates to `SpaceFlightApp` (JavaFX Application).
 
-
----
-
-## 12. Future Outlook
-
-The codebase is deliberately structured so that moving from a single-process application to a client-server architecture requires **no changes to any view or business-logic class**.
-The only things that change are the concrete implementations behind the existing service interfaces.
-
-#### What Changes
-
-| Current (Single-Process) | After HTTP Migration |
-|---|---|
-| `AppContext` creates `Default*` service implementations directly | Server retains `AppContext`; client introduces a `ClientAppContext` that provides HTTP-backed service proxies |
-| `DefaultSimulationService` drives the tick loop via a JavaFX `Timeline` | Server continues to run the `Timeline` internally; clients receive tick updates through a WebSocket or SSE stream |
-| Tick data is passed in-memory as `SimulationSnapshot` | Server serializes `SimulationSnapshot` to JSON; clients deserialize and rebuild the snapshot locally |
-| Alert and psychological-support listener callbacks fire in-process | Server publishes state-change events via WebSocket; clients subscribe and invoke their local UI handlers |
-
-
-#### Why the current code is already prepared
-
-- **Service interfaces exist** for every backend concern. Views never import a
-  `Default*` class directly.
-- **`AppContext`** is the single place that knows concrete implementations.
-  Replacing it is a one-line change in `SpaceFlightApp`.
-- **`SimulationSnapshot`** is already an immutable, copyable data object.
-  Adding `@JsonProperty` annotations (or a Jackson `ObjectMapper`) is all that
-  is needed to serialise it.
-- **`PassengerDashboardView.update(SimulationSnapshot)`** and
-  **`StewardessInboxView.update(SimulationSnapshot)`** already accept the
-  snapshot type, not the raw `Passenger` object. Over HTTP, the server just
-  sends JSON, the client deserialises it into a `SimulationSnapshot`, and calls
-  the same method.
-- **Alert / psych listeners** (`setOnAlertRaised`, `setOnRequestRaised`) have
-  the right shape for a future WebSocket subscription (only the transport
-  underneath changes).
 
 ---
 
