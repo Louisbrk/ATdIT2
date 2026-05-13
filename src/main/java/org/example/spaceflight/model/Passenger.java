@@ -3,7 +3,7 @@ package org.example.spaceflight.model;
 import java.lang.invoke.MethodHandles;
 import java.util.logging.Logger;
 
-/** Represents a space tourism passenger with personal data, health state, and experience mode. */
+// Represents a space tourism passenger with personal data, health state, and experience mode
 public class Passenger {
 
     private static final Logger log = Logger.getLogger( MethodHandles.lookup( ).lookupClass( ).getName( ) );

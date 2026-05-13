@@ -4,7 +4,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.logging.Logger;
 
-/** Holds the fixed passenger manifest and stewardess for the demo flight. */
+// Holds the fixed passenger manifest and stewardess for the demo flight
 public class PassengerRegistry implements IPassengerRegistry {
 
     private static final Logger log = Logger.getLogger( MethodHandles.lookup( ).lookupClass( ).getName( ) );
@@ -12,7 +12,7 @@ public class PassengerRegistry implements IPassengerRegistry {
     private final Stewardess stewardess;
     private final List<Passenger> passengers;
 
-    /** Initialises the fixed passenger manifest and crew for the demo flight. */
+    // Initialises the fixed passenger manifest and crew for the demo flight.
     public PassengerRegistry() {
         stewardess = new Stewardess("Anne Bright", 27, Gender.FEMALE);
 

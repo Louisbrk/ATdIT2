@@ -1,6 +1,6 @@
 package org.example.spaceflight.model;
 
-/** Mutable snapshot of all shuttle telemetry values for a single simulation tick. */
+// Mutable snapshot of all shuttle telemetry values for a single simulation tick
 public class ShuttleState {
 
     private double fuelPercent;

@@ -1,155 +1,76 @@
 # SpaceFlight
-SpaceFlight is a program developed in our university lecture called ATdIT.
-It simulates a shuttle flight and supports ground crew and passengers during the flight with a focus on AI Health monitoring and prioritisation.
 
-To run:
-```bash
-./mvnw javafx:run
-```
+![SpaceFlight Banner](src/main/resources/org/example/spaceflight/images/earth.jpg)
 
-## AI Health Classification
+Crewed Spaceflight Assistance System — JavaFX 24 / Java 25
 
-### Training Data (`src/main/resources/training_data.csv`)
+[![Java](https://img.shields.io/badge/Java-25-ED8B00?logo=openjdk&logoColor=white)](https://openjdk.org/)
+[![JavaFX](https://img.shields.io/badge/JavaFX-24-1F8ACB?logo=java&logoColor=white)](https://openjfx.io/)
+[![Build](https://img.shields.io/badge/build-Maven-C71A36?logo=apachemaven&logoColor=white)](https://maven.apache.org/)
+![Status](https://img.shields.io/badge/status-academic%20project-8A2BE2)
+![License](https://img.shields.io/badge/license-educational%20only-lightgrey)
 
-The classifier is trained on **144 labelled cases** covering all demographic segments of the passenger population.
 
-**CSV format:**
-
-```
-bpm, spo2, systolic, diastolic, respRate, ageGroup, gender, mode, label
-```
-
-| Column | Type | Values |
-|--------|------|--------|
-| `bpm` | int | Heart rate in beats per minute |
-| `spo2` | double | Blood oxygen saturation in % |
-| `systolic` | int | Systolic blood pressure in mmHg |
-| `diastolic` | int | Diastolic blood pressure in mmHg |
-| `respRate` | int | Respiratory rate in breaths per minute |
-| `ageGroup` | enum | `YOUNG` (< 30), `MIDDLE` (30–50), `SENIOR` (> 50) |
-| `gender` | enum | `MALE`, `FEMALE` |
-| `mode` | enum | `RELAXED`, `NORMAL`, `ACTION` |
-| `label` | enum | `GREEN` (healthy), `YELLOW` (warning), `RED` (critical) |
-
-The dataset covers all **18 demographic segments** (3 age groups × 2 genders × 3 experience modes), each with representative GREEN, YELLOW and RED cases. Comments starting with `#` are ignored by the parser.
-
-Baseline values are derived from published clinical reference ranges (AHA / ESC normal ranges segmented by age and sex). The `mode` column reflects expected physiological arousal:
-- **ACTION** mode: higher BPM and blood pressure values are still considered normal (passengers are in an excited state)
-- **RELAXED** mode: stricter thresholds — elevated stress indicators are flagged earlier
-- **NORMAL** mode: standard clinical reference values
+SpaceFlight is a JavaFX prototype created in the university module "Ausgewählte Themen der IT (ATdIT)". It simulates the space‑flight phase of a space‑tourism mission and supports ground crew and passengers with AI‑driven health monitoring, prioritization and alert workflows. The goal of the application is to ensure a happy and safe customer experience.
 
 ---
 
-### Classification Algorithm (k-Nearest Neighbours)
+## Table of Contents
 
-The health status of each passenger is determined at every simulation tick by a **k-Nearest Neighbours (kNN)** classifier implemented in `KnnHealthEvaluationService`.
+- [About the Project](#about-the-project)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [License](#license)
+- Documentation
+  - [BPMN Diagrams](docs/BPMN)
+  - [Mockups](docs/MockUps)
+  - [Personas](docs/Personas)
+  - [Technical Documentation](docs/Technical_Documentation.md)
+  - [User Guide](docs/USER_GUIDE.md)
 
-#### Step 1 — Feature normalisation
+---
 
-All five vital features are normalised to **[0, 1]** using the min/max values derived from the training set:
+## About the Project
 
-```
-normalised = (value - min) / (max - min)
-```
+SpaceFlight is a desktop application that simulates a shuttle flight from takeoff to landing. The focus is on:
+- AI‑based classification of each passenger’s health status on every tick (k‑NN with safety rules).
+- Crew dashboards (base station, emergency view), an AI‑Health dashboard, and passenger/stewardess UIs.
+- Alert handling (emergency) and psychological support requests with workflows and listener callbacks.
+- Experience modes (RELAXED, NORMAL, ACTION) with distinct UI themes.
+- Emergency landing flow.
 
-This ensures that features with larger absolute ranges (e.g. blood pressure 80–200) do not dominate features with smaller ranges (e.g. SpO2 80–100).
-
-#### Step 2 — Weighted Euclidean distance
-
-For each training case the distance to the current observation is computed as a **weighted Euclidean distance**:
-
-```
-d = sqrt( W_SpO2  * (Δspo2)²
-        + W_Sys   * (Δsystolic)²
-        + W_BPM   * (Δbpm)²
-        + W_Dias  * (Δdiastolic)²
-        + W_RR    * (ΔrespRate)² )
-```
-
-Feature weights reflect medical importance in an aerospace context:
-
-| Feature | Weight |
-|---------|--------|
-| SpO2 | 0.30 |
-| Systolic BP | 0.25 |
-| BPM | 0.20 |
-| Diastolic BP | 0.15 |
-| Respiratory Rate | 0.10 |
-
-#### Step 3 — Demographic context bonus
-
-If a training case shares the same **age group**, **gender**, or **experience mode** as the passenger, a small distance bonus (`-0.08` per match) is applied. This ensures demographically similar cases are preferred as neighbours, so a senior male in ACTION mode is compared primarily against other senior male ACTION cases.
-
-#### Step 4 — Majority vote (k = 5)
-
-The **5 nearest neighbours** are selected and their labels are counted. The label with the most votes determines the overall health status:
-
-```
-GREEN=2, YELLOW=1, RED=2  →  RED wins (tie-break favours the more critical status)
-```
-
-#### Step 5 — Per-vital status via Z-Score
-
-Independently of the kNN vote, each individual vital sign is classified by computing a **z-score** against a demographic population baseline (stored in `VitalProfileTable`):
-
-```
-z = |value - population_mean| / population_stdDev
-```
-
-- `z < 1.0` → GREEN
-- `1.0 ≤ z < 2.0` → YELLOW
-- `z ≥ 2.0` → RED
-
-This drives the colour of each individual vital row in the dashboard (BPM, SpO2, BP, RR shown in green / amber / red independently).
-
-#### Step 6 — Hard floor rule
-
-If any single vital is classified as RED by the z-score, the overall status is elevated to RED regardless of the kNN vote. A single critical vital sign always constitutes a medical emergency.
+Behind the UI, clearly separated services (simulation, vital generation, health evaluation, alerts) and a snapshot boundary prepare the codebase for a future client/server split.
 
 ---
 
 ## Architecture
 
-### Current design (single-process)
+Layered single‑process architecture with clear interfaces:
 
-All dashboards run in the same JVM. `SpaceFlightApp` is the entry point and owns
-the lifecycle. All services are created once and shared as interface references.
-
-```
-SpaceFlightApp
-  └── AppContext                 (one class that knows all concrete implementations)
-        ├── SimulationService
-        ├── FlightSimulationService
-        ├── VitalSignsGenerator
-        ├── AlertService
-        ├── PsychologicalSupportService
-        └── IPassengerRegistry
-```
-
-Every simulation tick `SpaceFlightApp` does three things:
-
-1. Updates the flight state and generates new vital signs (server-side work).
-2. Builds a `SimulationSnapshot` — an immutable, serialisation-ready data object.
-3. Pushes the snapshot to all views via `Platform.runLater`.
-
-```
-Simulation tick
-  │
-  ├─ flightSimulationService.update()
-  ├─ vitalSignsGenerator.generateNext()  ← mutates Passenger objects
-  │
-  ├─ new SimulationSnapshot(state, passengers, ...)   ← serialisable boundary
-  │
-  ├─ Base-station views  (use live objects — same process as the simulation)
-  │     BaseStationView.updateFlightInfo(ShuttleState)
-  │     AiHealthDashboardView.update(List<Passenger>, FlightPhase)
-  │
-  └─ Client-facing views  (receive only the snapshot — no direct object refs)
-        PassengerDashboardView.update(SimulationSnapshot)
-        StewardessInboxView.update(SimulationSnapshot)
-```
-
-Alert and psychological-support events travel via listener callbacks
-(`AlertService.setOnAlertRaised`, `PsychologicalSupportService.setOnRequestRaised`).
+- Bootstrap / Composition Root: `app` (`Launcher`, `SpaceFlightApp`, `AppContext`)
+- Presentation: `ui.*` (JavaFX views, partial MVP in passenger dashboard)
+- Service / Use‑Case: `simulation`, `health`, `alert`
+- Domain Model: `model` (Passenger, VitalSigns, Snapshots, enums)
 
 ---
+## Project Structure
+
+```text
+org.example.spaceflight
+├── app                  # Bootstrap & composition (Launcher, SpaceFlightApp, AppContext)
+├── model                # Domain: Passenger, VitalSigns, Snapshots, enums
+├── simulation           # Tick engine, flight phases, vital targets, headless runner
+├── health               # HealthEvaluationService, kNN classifier, profiles, orchestrator
+├── alert                # Alerts & psychological support (services, incidents, severity)
+└── ui                   # JavaFX views (shared, basestation, aihealth, passenger, simulation)
+```
+
+Total: ~80 classes across 8 packages (see detailed docs).
+
+---
+
+## License
+
+This repository is a university/educational project developed as part of the "Ausgewählte Themen der IT (ATdIT)" module at HWG Ludwigshafen. All rights are reserved by the authors. 
+
+The project was created by Louis Burckel, Wenhuan Liang, Valentin Reifke, Tim Vetter and Vivienne Wühl.
