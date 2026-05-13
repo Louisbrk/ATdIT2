@@ -1680,8 +1680,8 @@ mvn package
 
 ## 12. Future Outlook
 
-The codebase is deliberately structured so that moving from a single-process application to a client-server architecture requires **no changes to any view or business-logic class**.
-The only things that change are the concrete implementations behind the existing service interfaces.
+The codebase is deliberately structured so that moving from a single-process application to a client-server architecture requires **minimal changes** to view or business-logic classes, primarily limited to adding serialization annotations and WebSocket/event-transport adapters.
+The main changes are the concrete implementations behind the existing service interfaces.
 
 #### What Changes
 
