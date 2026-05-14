@@ -7,12 +7,25 @@
 1. [Project Overview](#1-project-overview)
 2. [Technology Stack](#2-technology-stack)
 3. [Architecture Overview](#3-architecture-overview) _(Package: app)_
+   - 3.1 [Layered Architecture](#31-layered-architecture)
+   - 3.2 [Architectural Patterns](#32-architectural-patterns)
+   - 3.3 [High-Level Component Diagram](#33-high-level-component-diagram)
+   - 3.4 [Runtime Data Flow (per simulation tick)](#34-runtime-data-flow-per-simulation-tick)
 4. [Package Structure](#4-package-structure)
 5. [Domain Model](#5-domain-model) _(Package: model)_
+   - 5.1 [Core Class Diagram (Overview)](#51-core-class-diagram-overview)
+   - 5.2 [Enums](#52-enums)
+   - 5.3 [Registry/Container](#53-registrycontainer)
 6. [Service Layer](#6-service-layer)
+   - 6.1 [Purpose of the Service Layer](#61-purpose-of-the-service-layer)
+   - 6.2 [Core Service Contracts and Default Implementations](#62-core-service-contracts-and-default-implementations)
+   - 6.3 [How `AppContext` works](#63-how-appcontext-works)
+   - 6.4 [Where `SpaceFlightApp` fits](#64-where-spaceflightapp-fits)
+   - 6.5 [Runtime interaction (Service Layer in action)](#65-runtime-interaction-service-layer-in-action)
+   - 6.6 [Why this structure matters](#66-why-this-structure-matters)
 7. [Simulation Engine](#7-simulation-engine) _(Package: simulation)_
    - 7.1 [Overview](#71-overview)
-   - 7.2 [Class diagram](#72-class-diagram)
+   - 7.2 [Class diagrams](#72-class-diagrams)
    - 7.3 [Simulation control lifecycle](#73-simulation-control-lifecycle)
    - 7.4 [Runtime contracts](#74-runtime-contracts)
    - 7.5 [Main tick pipeline](#75-main-tick-pipeline)
@@ -21,6 +34,14 @@
    - 7.8 [Vital generation](#78-vital-generation)
    - 7.9 [Experience mode](#79-experience-mode)
 8. [AI Health Classification](#8-ai-health-classification) _(Package: health)_
+   - 8.1 [Scope and runtime role](#81-scope-and-runtime-role)
+   - 8.2 [Class inventory (health package)](#82-class-inventory-health-package)
+   - 8.3 [Data model and training data](#83-data-model-and-training-data)
+   - 8.4 [Active classification pipeline (`KnnHealthEvaluationService`)](#84-active-classification-pipeline-knnhealthevaluationservice)
+   - 8.5 [Baseline profile system (`VitalProfileTable`)](#85-baseline-profile-system-vitalprofiletable)
+   - 8.6 [Batch orchestration (`HealthEvaluationOrchestrator`)](#86-batch-orchestration-healthevaluationorchestrator)
+   - 8.7 [Runtime flow (health subsystem)](#87-runtime-flow-health-subsystem)
+   - 8.8 [Behavioral notes and limitations](#88-behavioral-notes-and-limitations)
 9. [Alert and Psychological Support System](#9-alert-and-psychological-support-system) _(Package: alert)_
    - 9.1 [Overview](#91-overview)
    - 9.2 [Class Diagram](#92-class-diagram)
@@ -28,6 +49,17 @@
    - 9.4 [Service API Semantics](#94-service-api-semantics)
    - 9.5 [Alert Flow](#95-alert-flow)
 10. [UI Layer](#10-ui-layer) _(Package: ui)_
+    - 10.1 [Package Overview](#101-package-overview)
+    - 10.2 [Dashboard Entry Flow](#102-dashboard-entry-flow)
+    - 10.3 [Shared UI Infrastructure](#103-shared-ui-infrastructure)
+    - 10.4 [Base Station Views](#104-base-station-views)
+    - 10.5 [AI Health Dashboard Layout](#105-ai-health-dashboard-layout)
+    - 10.6 [Passenger Dashboard and MVP Split](#106-passenger-dashboard-and-mvp-split)
+    - 10.7 [Passenger Theme System](#107-passenger-theme-system)
+    - 10.8 [Stewardess Dashboard](#108-stewardess-dashboard)
+    - 10.9 [Simulation Control View](#109-simulation-control-view)
+    - 10.10 [Threading and State Synchronization](#1010-threading-and-state-synchronization)
+    - 10.11 [Current UI Limitations](#1011-current-ui-limitations)
 11. [Build and Run](#11-build-and-run) _(Package: app)_
 12. [Future Outlook](#12-future-outlook)
 - [Appendix A: Logging](#appendix-a-logging)
@@ -586,7 +618,7 @@ public interface IPassengerRegistry {
 }
 ```
 
-### 5.3.2 `PassengerRegistry`
+#### 5.3.2 `PassengerRegistry`
 **Purpose**: Concrete implementation featuring a fixed passenger manifest for the demo flight. (hardcoded)
 
 #### Fixed Demo Passengers:
