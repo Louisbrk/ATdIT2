@@ -12,8 +12,10 @@ import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.example.spaceflight.alert.AlertService;
@@ -37,6 +39,7 @@ public class PassengerDashboardView {
 
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("h:mm a");
 
+    private final StackPane rootStack;
     private final BorderPane root;
     private final Passenger passenger;
     private final RouteMapCanvas routeMap;
@@ -55,7 +58,14 @@ public class PassengerDashboardView {
         root = new BorderPane();
         root.setStyle("-fx-background-color: white;");
 
-        settings  = new PassengerSettingsDialog(root, this::onLanguageChanged);
+        Pane dimOverlay = new Pane();
+        dimOverlay.setStyle("-fx-background-color: black;");
+        dimOverlay.setOpacity(0.0);
+        dimOverlay.setMouseTransparent(true);
+
+        rootStack = new StackPane(root, dimOverlay);
+
+        settings  = new PassengerSettingsDialog(dimOverlay, this::onLanguageChanged);
         presenter = new PassengerDashboardPresenter(
                 passenger, alertService, psychService, modeService, settings);
 
@@ -232,7 +242,7 @@ public class PassengerDashboardView {
     }
 
     public Region getRoot() {
-        return root;
+        return rootStack;
     }
 
     public Passenger getPassenger() {
