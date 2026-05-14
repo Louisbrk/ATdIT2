@@ -24,8 +24,6 @@ public class DefaultFlightSimulationService implements FlightSimulationService {
     private static final int    EMERGENCY_MIN_TICKS = 40; // shortest possible emergency descent
     private static final int    EMERGENCY_TICKS_AT_ORBIT = 120; // 60s real time at full orbit altitude
     private static final double ORBIT_VELOCITY_KMPH = 28000.0; // low-Earth-orbit speed
-    /** Reference total route length (km); not used in calculations — segment distances are set explicitly in ascent/orbit/descent. */
-    private static final double MAX_DISTANCE_KM = 800.0;
 
     private final ShuttleState state = new ShuttleState();
 
