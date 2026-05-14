@@ -2,7 +2,6 @@ package org.example.spaceflight.alert;
 
 import org.example.spaceflight.model.Passenger;
 
-import java.util.List;
 import java.util.function.Consumer;
 
 /** Service for raising and resolving psychological support requests from passengers. */
