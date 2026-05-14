@@ -1,6 +1,6 @@
 # SpaceFlight
 
-<img src="src/main/resources/org/example/spaceflight/images/LUMEIA.png" alt="SpaceFlight Banner" width="800">
+<img src="src/main/resources/org/example/spaceflight/images/LUMEIA.png" alt="SpaceFlight Banner" width="1254">
 
 Crewed Spaceflight Assistance System — JavaFX 24 / Java 25
 
@@ -22,7 +22,8 @@ SpaceFlight is a JavaFX prototype created in the university module "Ausgewählte
 - [Project Structure](#project-structure)
 - [License](#license)
 - Documentation
-  - [BPMN Diagrams](docs/BPMN)
+  - [Sales Pitch (Wiki)](https://github.com/Louisbrk/ATdIT2/wiki/Start‐up-Marketing-Pitch)
+  - [BPMN Diagrams](docs/BPMN) (or see Signavio Folder)
   - [Mockups](docs/MockUps)
   - [Personas](docs/Personas)
   - [Technical Documentation](docs/Technical_Documentation.md)
