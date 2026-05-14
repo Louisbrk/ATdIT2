@@ -12,8 +12,6 @@ public interface AlertService {
 
     void resolveAlert(String alertId);
 
-    List<AlertIncident> getActiveAlerts();
-
     List<AlertIncident> getAlertsForPassenger(Passenger passenger);
 
     List<AlertIncident> getAllAlertsForPassenger(Passenger passenger);

@@ -24,7 +24,6 @@ public class DefaultFlightSimulationService implements FlightSimulationService {
     private static final int    EMERGENCY_MIN_TICKS = 40; // shortest possible emergency descent
     private static final int    EMERGENCY_TICKS_AT_ORBIT = 120; // 60s real time at full orbit altitude
     private static final double ORBIT_VELOCITY_KMPH = 28000.0; // low-Earth-orbit speed
-    private static final double MAX_DISTANCE_KM = 800.0;       // total route distance
 
     private final ShuttleState state = new ShuttleState();
 
@@ -78,6 +77,7 @@ public class DefaultFlightSimulationService implements FlightSimulationService {
         log.warning("Emergency landing initiated at altitude " + String.format("%.0f", emergencyStartAltitude) + " km");
     }
 
+    /** See {@link FlightSimulationService#isEmergencyLanding()} — callers typically use {@link ShuttleState#isEmergencyLanding()} from {@link #getCurrentState()} instead. */
     @Override
     public boolean isEmergencyLanding() {
         return emergencyActive;

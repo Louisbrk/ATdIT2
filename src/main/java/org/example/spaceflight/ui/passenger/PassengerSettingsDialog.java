@@ -8,6 +8,7 @@ import javafx.scene.control.RadioButton;
 import javafx.scene.control.Slider;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
@@ -27,7 +28,7 @@ public class PassengerSettingsDialog {
 
     public enum Language { EN, DE }
 
-    private final Region targetRoot;
+    private final Pane dimOverlay;
     private final Runnable onLanguageChanged;
 
     private Language currentLanguage   = Language.EN;
@@ -35,11 +36,11 @@ public class PassengerSettingsDialog {
     private double   currentVolume     = 50.0;
 
     /**
-     * @param targetRoot       the root node whose opacity is adjusted by the brightness slider
+     * @param dimOverlay       a black overlay pane whose opacity is adjusted to dim the screen
      * @param onLanguageChanged callback invoked after the language changes (so the dashboard can retranslate)
      */
-    public PassengerSettingsDialog(Region targetRoot, Runnable onLanguageChanged) {
-        this.targetRoot = targetRoot;
+    public PassengerSettingsDialog(Pane dimOverlay, Runnable onLanguageChanged) {
+        this.dimOverlay = dimOverlay;
         this.onLanguageChanged = onLanguageChanged;
     }
 
@@ -83,7 +84,7 @@ public class PassengerSettingsDialog {
         brightnessVal.setMinWidth(38);
         brightnessSlider.valueProperty().addListener((obs, o, n) -> {
             currentBrightness = n.doubleValue();
-            targetRoot.setOpacity(currentBrightness);
+            dimOverlay.setOpacity(1.0 - currentBrightness);
             brightnessVal.setText(String.format("%.0f%%", currentBrightness * 100));
         });
         HBox brightnessRow = new HBox(8, brightnessSlider, brightnessVal);

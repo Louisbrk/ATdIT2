@@ -1,0 +1,7 @@
+![mup.png](mockupscreenshots/mup.png)
+![mupa.png](mockupscreenshots/mupa.png)
+![mub.png](mockupscreenshots/mub.png)
+![mubi.png](mockupscreenshots/mubi.png)
+![mubaih.png](mockupscreenshots/mubaih.png)
+![muba.png](mockupscreenshots/muba.png)
+![mubpa.png](mockupscreenshots/mubpa.png)

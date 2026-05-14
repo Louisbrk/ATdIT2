@@ -12,8 +12,10 @@ import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.example.spaceflight.alert.AlertService;
@@ -24,6 +26,7 @@ import org.example.spaceflight.model.Passenger;
 import org.example.spaceflight.model.SimulationSnapshot;
 import org.example.spaceflight.simulation.ExperienceModeService;
 import org.example.spaceflight.ui.passenger.theme.DashboardSkin;
+import org.example.spaceflight.ui.shared.LogoView;
 import org.example.spaceflight.ui.shared.RouteMapCanvas;
 
 import java.time.LocalTime;
@@ -36,6 +39,7 @@ public class PassengerDashboardView {
 
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("h:mm a");
 
+    private final StackPane rootStack;
     private final BorderPane root;
     private final Passenger passenger;
     private final RouteMapCanvas routeMap;
@@ -54,7 +58,14 @@ public class PassengerDashboardView {
         root = new BorderPane();
         root.setStyle("-fx-background-color: white;");
 
-        settings  = new PassengerSettingsDialog(root, this::onLanguageChanged);
+        Pane dimOverlay = new Pane();
+        dimOverlay.setStyle("-fx-background-color: black;");
+        dimOverlay.setOpacity(0.0);
+        dimOverlay.setMouseTransparent(true);
+
+        rootStack = new StackPane(root, dimOverlay);
+
+        settings  = new PassengerSettingsDialog(dimOverlay, this::onLanguageChanged);
         presenter = new PassengerDashboardPresenter(
                 passenger, alertService, psychService, modeService, settings);
 
@@ -169,7 +180,10 @@ public class PassengerDashboardView {
         VBox modeBox = new VBox(6, modeTitle, relaxRadio, normalRadio, actionRadio);
         modeBox.setPadding(new Insets(8));
 
-        VBox sidebar = new VBox(15, infoBox, alertButton, psychButton, modeBox);
+        Region sidebarSpacer = new Region();
+        VBox.setVgrow(sidebarSpacer, Priority.ALWAYS);
+        VBox sidebar = new VBox(15, infoBox, alertButton, psychButton, modeBox,
+                sidebarSpacer, LogoView.medium());
         sidebar.setPadding(new Insets(15));
         sidebar.setAlignment(Pos.TOP_CENTER);
         sidebar.setPrefWidth(200);
@@ -228,7 +242,7 @@ public class PassengerDashboardView {
     }
 
     public Region getRoot() {
-        return root;
+        return rootStack;
     }
 
     public Passenger getPassenger() {

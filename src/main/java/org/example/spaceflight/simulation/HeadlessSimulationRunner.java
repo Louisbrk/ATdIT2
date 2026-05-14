@@ -21,6 +21,11 @@ import java.util.logging.Logger;
  *
  * Run via:
  *   mvn compile exec:java -Dexec.mainClass="org.example.spaceflight.simulation.HeadlessSimulationRunner"
+ *
+ * <p>Not started from {@link org.example.spaceflight.app.SpaceFlightApp} — it is an optional
+ * standalone entry point for batch runs and tuning reports. It was written when a separate
+ * simulation process (client–server style) was still planned; the course later dropped that
+ * architecture, so the desktop app does not invoke this class.</p>
  */
 public class HeadlessSimulationRunner {
 

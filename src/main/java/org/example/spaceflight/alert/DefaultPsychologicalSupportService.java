@@ -41,15 +41,6 @@ public class DefaultPsychologicalSupportService implements PsychologicalSupportS
     }
 
     @Override
-    public List<PsychologicalIncident> getActiveRequests() {
-        List<PsychologicalIncident> active = new ArrayList<>();
-        for (PsychologicalIncident incident : incidents) {
-            if (!incident.isResolved()) active.add(incident);
-        }
-        return active;
-    }
-
-    @Override
     public void setOnRequestRaised(Consumer<PsychologicalIncident> handler) {
         onRaisedListeners.add(handler);
     }

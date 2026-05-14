@@ -17,6 +17,7 @@ import org.example.spaceflight.alert.PsychologicalIncident;
 import org.example.spaceflight.alert.PsychologicalSupportService;
 import org.example.spaceflight.model.ShuttleState;
 import org.example.spaceflight.model.Stewardess;
+import org.example.spaceflight.ui.shared.LogoView;
 import org.example.spaceflight.ui.shared.RouteMapCanvas;
 
 import java.lang.invoke.MethodHandles;
@@ -184,7 +185,8 @@ public class StewardessInboxView {
         notifScroll.setStyle("-fx-background: #E8EAF6; -fx-background-color: #E8EAF6;");
         VBox.setVgrow(notifScroll, Priority.ALWAYS);
 
-        sidebar.getChildren().addAll(flightSchedule, alertButton, notifTitle, notifScroll);
+        sidebar.getChildren().addAll(flightSchedule, alertButton, notifTitle, notifScroll,
+                LogoView.medium());
 
         root.setTop(titleBar);
         root.setCenter(centerContent);

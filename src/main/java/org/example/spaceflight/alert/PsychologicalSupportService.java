@@ -12,8 +12,6 @@ public interface PsychologicalSupportService {
 
     void resolveRequest(String id);
 
-    List<PsychologicalIncident> getActiveRequests();
-
     void setOnRequestRaised(Consumer<PsychologicalIncident> handler);
 
     void setOnRequestResolved(Consumer<PsychologicalIncident> handler);
