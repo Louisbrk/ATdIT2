@@ -701,82 +701,15 @@ The simulation subsystem drives **time progression**, **shuttle telemetry**, **p
 
 `AppContext` constructs each default implementation once and exposes it through the interface type. `SpaceFlightApp` registers **one** tick listener that advances flight state, regenerates vitals for every passenger, builds a `SimulationSnapshot`, and pushes UI updates on the JavaFX thread.
 
-### 7.2 Class diagram
+### 7.2 Class diagrams
+
+The simulation structure is split into focused views so the diagrams stay readable on a normal laptop screen.
+
+#### 7.2.1 Control loop and flight state
 
 ```mermaid
 classDiagram
     direction TB
-
-    namespace simulation {
-        class SimulationService {
-            <<interface>>
-            +start(SimulationConfig)
-            +pause()
-            +resume()
-            +stop()
-            +setSpeed(double)
-            +addTickListener(TickListener)
-        }
-
-        class DefaultSimulationService {
-        }
-
-        class FlightSimulationService {
-            <<interface>>
-            +update(long tickCount)
-            +emergencyLanding()
-            +isEmergencyLanding()
-            +getCurrentState()
-            +setOnEmergencyLanded(Runnable)
-            +getEmergencyProgress()
-        }
-
-        class DefaultFlightSimulationService {
-        }
-
-        class VitalSignsGenerator {
-            <<interface>>
-            +generateNext(Passenger, FlightPhase)
-            +configure(int tickIntervalMs)
-            +markAsEmergency(String name, long totalTicks)
-        }
-
-        class DefaultVitalSignsGenerator {
-        }
-
-        class ExperienceModeService {
-            <<interface>>
-            +changeMode(Passenger, ExperienceMode)
-        }
-
-        class DefaultExperienceModeService {
-        }
-
-        class IVitalTargetProvider {
-            <<interface>>
-            +buildTarget(...)
-        }
-
-        class DefaultVitalTargetProvider {
-        }
-
-        class PersonalProfile {
-            <<package-private>>
-        }
-
-        class PhaseTarget {
-            <<package-private>>
-        }
-    }
-
-    namespace model {
-        class SimulationConfig
-        class Passenger
-        class ShuttleState
-        class FlightPhase
-        class ExperienceMode
-        class VitalSigns
-    }
 
     namespace app {
         class AppContext
@@ -787,41 +720,104 @@ classDiagram
         class SimulationConfigView
     }
 
+    namespace simulation {
+        class SimulationService {
+            <<interface>>
+        }
+        class DefaultSimulationService
+        class FlightSimulationService {
+            <<interface>>
+        }
+        class DefaultFlightSimulationService
+    }
+
+    namespace model {
+        class SimulationConfig
+        class ShuttleState
+    }
+
     DefaultSimulationService ..|> SimulationService
     DefaultFlightSimulationService ..|> FlightSimulationService
+
+    AppContext ..> SimulationService : creates default
+    AppContext ..> FlightSimulationService : creates default
+
+    SimulationConfigView --> SimulationService : controls
+    SpaceFlightApp --> SimulationService : receives ticks
+    SpaceFlightApp --> FlightSimulationService : updates flight
+    SpaceFlightApp ..> SimulationConfig : reads
+
+    FlightSimulationService --> ShuttleState : owns
+```
+
+`SimulationService` operations: `start(SimulationConfig)`, `pause()`, `resume()`, `stop()`, `setSpeed(double)`, `isRunning()`, `isPaused()`, `addTickListener(TickListener)`.
+
+`FlightSimulationService` operations: `update(long tickCount)`, `emergencyLanding()`, `isEmergencyLanding()`, `getCurrentState()`, `setOnEmergencyLanded(Runnable)`, `getEmergencyProgress()`.
+
+#### 7.2.2 Vital generation and experience mode
+
+```mermaid
+classDiagram
+    direction TB
+
+    namespace simulation {
+        class VitalSignsGenerator {
+            <<interface>>
+        }
+        class DefaultVitalSignsGenerator
+        class ExperienceModeService {
+            <<interface>>
+        }
+        class DefaultExperienceModeService
+        class IVitalTargetProvider {
+            <<interface>>
+        }
+        class DefaultVitalTargetProvider
+        class PersonalProfile {
+            <<package-private>>
+        }
+        class PhaseTarget {
+            <<package-private>>
+        }
+    }
+
+    namespace model {
+        class Passenger
+        class FlightPhase
+        class ExperienceMode
+        class VitalSigns
+    }
+
     DefaultVitalSignsGenerator ..|> VitalSignsGenerator
     DefaultExperienceModeService ..|> ExperienceModeService
     DefaultVitalTargetProvider ..|> IVitalTargetProvider
 
-    DefaultVitalSignsGenerator --> IVitalTargetProvider : uses
+    DefaultVitalSignsGenerator --> IVitalTargetProvider : requests target
     DefaultVitalSignsGenerator ..> PersonalProfile : maintains
-    DefaultVitalSignsGenerator ..> PhaseTarget : receives from provider
-    DefaultVitalTargetProvider ..> PersonalProfile : reads baselines
+    DefaultVitalSignsGenerator ..> PhaseTarget : consumes
+    DefaultVitalTargetProvider ..> PersonalProfile : reads baseline
     DefaultVitalTargetProvider ..> PhaseTarget : builds
 
-    DefaultFlightSimulationService --> ShuttleState : owns
-
-    AppContext ..> SimulationService : creates default
-    AppContext ..> FlightSimulationService : creates default
-    AppContext ..> VitalSignsGenerator : creates default
-    AppContext ..> ExperienceModeService : creates default
-
-    SimulationConfigView --> SimulationService : controls
-    SpaceFlightApp --> SimulationService : tick orchestration
-    SpaceFlightApp --> FlightSimulationService : flight + emergency
-    SpaceFlightApp --> VitalSignsGenerator : vitals per tick
-    SpaceFlightApp ..> SimulationConfig : reads interval / emergencies
-
-    VitalSignsGenerator ..> Passenger : reads / writes vitals
+    VitalSignsGenerator ..> Passenger : updates
     VitalSignsGenerator ..> FlightPhase : input
+    VitalSignsGenerator ..> VitalSigns : returns
     ExperienceModeService ..> Passenger : updates mode
+    ExperienceModeService ..> ExperienceMode : selects
+    IVitalTargetProvider ..> FlightPhase : uses
+    IVitalTargetProvider ..> ExperienceMode : uses
 ```
+
+`VitalSignsGenerator` operations: `generateNext(Passenger, FlightPhase)`, `configure(int tickIntervalMs)`, `markAsEmergency(String passengerName, long totalFlightTicks)`.
+
+`ExperienceModeService` operations: `changeMode(Passenger, ExperienceMode)`.
+
+`IVitalTargetProvider` operation: `buildTarget(PersonalProfile, FlightPhase, ExperienceMode, boolean emergency)`.
 
 **Dependency rules**
 
-- **simulation → model:** services read/write `Passenger`, `ShuttleState`, `SimulationConfig`, enums, and `VitalSigns`. The model package does not depend on simulation.
-- **app → simulation:** `AppContext` is the only composition root that instantiates `Default*` simulation classes; the rest of the app depends on interfaces.
-- **ui.simulation → simulation:** `SimulationConfigView` depends only on `SimulationService` for start/pause/resume/stop/speed.
+- **simulation -> model:** services read/write `Passenger`, `ShuttleState`, `SimulationConfig`, enums, and `VitalSigns`. The model package does not depend on simulation.
+- **app -> simulation:** `AppContext` is the only composition root that instantiates `Default*` simulation classes; the rest of the app depends on interfaces.
+- **ui.simulation -> simulation:** `SimulationConfigView` depends only on `SimulationService` for start/pause/resume/stop/speed.
 
 ### 7.3 Simulation control lifecycle
 
