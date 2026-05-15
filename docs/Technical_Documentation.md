@@ -1,6 +1,6 @@
 # Technical Documentation — SpaceFlight
 
-> **Disclaimer:** The overall structure, functionality, architecture, and core design concepts of this project were independently planned and developed by the project team. The initial prototype and parts of the implementation were created with the assistance of AI-based development tools. Mermaid diagrams in this documentation were also generated with AI support. All generated code and documentation content was subsequently reviewed, adapted, tested, and refined manually to ensure functionality, stability, maintainability, and overall code quality.
+> **Disclaimer:** The overall structure, functionality, architecture, and core design concepts of this project were independently planned and developed by the project team. The initial prototype (see commit history) was created with the assistance of AI-based development tools. Mermaid diagrams in this documentation were also generated with AI support. All generated code and documentation content was subsequently reviewed, adapted, tested, and refined manually to ensure functionality, stability, maintainability, and overall code quality.
 
 ## Table of Contents
 
